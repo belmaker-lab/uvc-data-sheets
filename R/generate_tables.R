@@ -29,7 +29,6 @@
 #
 # Follow the instuctions below if you wish to generate tables based on existing templates. 
 # Otherwise, modify the functions in `observer_tables_functions.R` files.
-# Un...????
 
 ########  Script Prerequisites:   ########################
 # 
