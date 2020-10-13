@@ -75,7 +75,7 @@ create_observer_working_sheets <- function(project,deployment,spreadsheet,observ
   }
   if (project %in% projects$`Eilat Transects`) { 
     for (transect_letter in LETTERS[4:1]){
-      sheet_identifier <- str_glue("Dive {deployment} - Transect {transect_letter}")
+      sheet_identifier <- str_glue("Site {deployment} - Transect {transect_letter}")
       googlesheets4::sheet_copy(from_ss = spreadsheet,
                                 from_sheet = "Observer Table - Cryptic - MASTER",
                                 to_ss = spreadsheet,
