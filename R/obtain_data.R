@@ -83,8 +83,8 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Eilat Transects June 2020"
-todays_folder   <- "Princess 2020-06-17"
+this_expedition <- "EcoCamp October 2020"
+todays_folder   <- "NA 2020-10-15"
 
 #######  Step 4: Download the data #############
 # 
@@ -92,3 +92,19 @@ todays_folder   <- "Princess 2020-06-17"
 #   Additionallly, uploads into a folder named COMPLETE DATA
 
 download_day_complete_data(this_expedition, todays_folder, upload = TRUE)
+
+#######  Step 5 Combine expedition data #############
+# 
+#   This step saves the expedition data as an object in R.
+#   Additionallly, uploads into a folder named EXPEDITION DATA
+
+combine_days_data(this_expedition)
+
+#######  Step 5 Alternative: Download entire expedition data #############
+# 
+#   This step is for performing the individual upload of daily data.
+#   Use this if you daily data were not uploaded during the expedition.
+#   This step saves the expedition data as an object in R.
+#   Additionallly, uploads into a folder named EXPEDITION DATA
+
+combine_days_data(this_expedition)
