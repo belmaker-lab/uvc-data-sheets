@@ -13,7 +13,7 @@ download_meta_sheet <- function(expedition_name, folder_name){
   
   if (unique(meta_table$Project) %in% projects$`Tel Aviv Transects`)
   {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
-    "{`First Observer`} and {`Second Observer`} - {Spot}"))}
+    "{`Fish Observer`} and {`Invertebrate Observer`} - {Spot}"))}
   if (unique(meta_table$Project) %in% projects$`Mediterranean Transects`)
   {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {SiteID}"))}
@@ -133,6 +133,8 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 
 read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
   worksheet <- googlesheets4::read_sheet(spreadsheet_id,sheet_identifier,col_types = "c")
+  message(glue::glue("Waiting for 10 seconds between worksheet"))
+  Sys.sleep(10)
   sample_metadata <- read_metadata_columns(day_meta, worksheet,sheet_identifier)
   sample_data <- read_observer_worksheet(day_meta, worksheet,sheet_identifier)
   bind_cols(sample_metadata,sample_data) %>% 
@@ -163,7 +165,9 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
       return()
   }
   else {
-    all_worksheets %>% 
+    lapply(all_worksheets, function(df) {
+      mutate(df,across(.fns = as.character))
+    }) %>% 
       bind_rows() %>%
       return()
     }
@@ -183,7 +187,7 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
 read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, names = NULL){
   if (is.null(names)){
     spreadsheets <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")) %>% 
-      filter(!name  %in% c("Metadata","COMPLETE DATA")) %>% 
+      filter(!name  %in% c("Metadata","Photos","COMPLETE DATA")) %>% 
       .$id
   }
   else{
@@ -218,7 +222,7 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`)
   {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
-    "{`First Observer`} and {`Second Observer`} - {Spot}"))}
+    "{`Fish Observer`} and {`Invertebrate Observer`} - {Site}"))}
   if (unique(day_metadata$Project) %in% projects$`Mediterranean Transects`)
   {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Site}"))}
@@ -243,4 +247,65 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
   return(day_complete_data)
 }
 
+# Function to download individual days data, join them, 
+# and upload to a EXPEDITION DATA folder.
+#  Input: Expedition name,
+#         optional: whether to upload individual day data
+# Output: A tibble containing all of the expedition data,
+#         uploaded into a created folder within
+#         expedition directory
 
+download_expedition_data <- function(expedition_name, upload = FALSE){
+  folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
+    filter(name != "EXPEDITION DATA") %>% 
+    .$name
+  
+  days_data <- lapply(folders, function(folder_name){
+    message(glue::glue("Downloading data from {folder_name}"))
+    if (upload) {
+      message(glue::glue("{folder_name} data uploaded"))
+    }
+    return(download_day_complete_data(expedition_name, folder_name, upload))
+  })
+  
+  days_data <- days_data %>% bind_rows
+  
+  googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
+                           path = str_glue("~/Data Sheets/{expedition_name}/"))
+  all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
+                                               sheets = list(Data = days_data))
+  googledrive::drive_mv(file = all_data, 
+                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  
+  return(days_data)
+}
+
+
+# Function to join individual day complete data, 
+# and upload to a EXPEDITION DATA folder.
+#  Input: Expedition name
+# Output: A tibble containing all of the expedition data,
+#         uploaded into a created folder within
+#         expedition directory
+combine_days_data <- function(expedition_name){
+  folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
+    filter(name != "EXPEDITION DATA") %>% 
+    .$name
+  
+  days_data <- lapply(folders, function(folder_name){
+    day_complete_data_id <- googledrive::drive_get(
+      str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/{folder_name}"))$id
+    return(googlesheets4::read_sheet(day_complete_data_id,sheet = "Data"))
+  })
+  
+    days_data <- days_data %>% bind_rows
+    
+    googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
+                             path = str_glue("~/Data Sheets/{expedition_name}/"))
+    all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
+                                          sheets = list(Data = days_data))
+    googledrive::drive_mv(file = all_data, 
+                          path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+    
+    return(days_data)
+}
