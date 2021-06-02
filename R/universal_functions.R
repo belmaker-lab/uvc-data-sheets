@@ -59,10 +59,15 @@ create_main_directory <- function(expedition_name,folder_name) {
 #  Input: Path of input csv file 
 # Output: A tibble of input table with filled cells for each column
 #         but First Observer and Second Observer (NAs remain NAs for these),
-#         Dive column omitted, and Site renamed to SiteID
+#         Dive column omitted, Site renamed to SiteID, and Fish/Invertebrate
+#         is renamed First/Second.
 
 read_metadata <- function(input_sheet){
   input <-  read_csv(input_sheet)
+  if ("Fish Observer" %in% colnames(input))
+    input <- input %>% rename('First Observer' = "Fish Observer")
+  if ("Invertebrate Observer" %in% colnames(input))
+    input <- input %>% rename('Second Observer' = "Invertebrate Observer")
   if ("Dive" %in% colnames(input))
     input <- input %>%  select(-Dive)
   if ("Site" %in% colnames(input))
