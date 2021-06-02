@@ -107,4 +107,4 @@ combine_days_data(this_expedition)
 #   This step saves the expedition data as an object in R.
 #   Additionallly, uploads into a folder named EXPEDITION DATA
 
-combine_days_data(this_expedition)
+download_expedition_data(this_expedition, upload = TRUE)
