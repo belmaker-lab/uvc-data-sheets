@@ -1,3 +1,13 @@
+photos_needed <- function(project){
+  out <- case_when(
+    project %in% projects$`Tel Aviv Transects`      ~ FALSE,
+    project %in% projects$`Eilat Transects`         ~ TRUE,
+    project %in% projects$`Eilat Knolls`            ~ FALSE,
+    project %in% projects$`Mediterranean Transects` ~ TRUE
+  )
+  return(out)
+}
+
 create_photo_folders_row <- function(surveyors_data, expedition_name, folder_name){
   
   photo_folder <- googledrive::drive_mkdir(name = surveyors_data$spreadsheet_name,
@@ -42,6 +52,19 @@ create_photo_folders <- function(file){
   
   message(glue::glue("Creating Photos folders"))
   
-  create_photo_folders_from_surveyor_data(surveyors_data,expedition_name,folder_name)
+  create_photo_folders_from_surveyor_data(surveyors_data = surveyors_data,
+                                          expedition_name = expedition_name,
+                                          folder_name = folder_name)
+}
+
+create_photo_folders_for_framework <- function(surveyors_data, expedition_name, folder_name){
+  message(glue::glue("Creating Photos folders...\n\n"))
   
+  googledrive::drive_mkdir(name = "Photos",
+                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"),
+                           verbose = FALSE)
+  
+  create_photo_folders_from_surveyor_data(surveyors_data = surveyors_data,
+                                          expedition_name = expedition_name,
+                                          folder_name = folder_name)
 }
