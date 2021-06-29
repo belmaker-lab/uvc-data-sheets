@@ -193,7 +193,7 @@ grant_writing_permission <- function(spreadsheet_id, vector_of_emails){
 
 create_spreadsheets_row <- function(surveyors_data, expedition_name, folder_name,project) {
   message(glue::glue("Creating spreadsheet for {surveyors_data$spreadsheet_name}"))
-  spreadsheet <- suppressMessages(copy_skeleton(skeleton = project,
+  spreadsheet <- suppressMessages(copy_skeleton(project = project,
                                expedition_name = expedition_name,
                                folder_name = folder_name,
                                spreadsheet_name = surveyors_data$spreadsheet_name))

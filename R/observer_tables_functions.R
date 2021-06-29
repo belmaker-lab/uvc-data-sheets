@@ -25,12 +25,12 @@ list_projects()
 #         Name of new spreadsheet after copying
 # Output: A copied skeleton spreadsheet with new name in the selected destination
 
-copy_skeleton <- function(skeleton, expedition_name, folder_name, spreadsheet_name) {
+copy_skeleton <- function(project, expedition_name, folder_name, spreadsheet_name) {
   skeleton <- case_when(
-    skeleton %in% projects$`Tel Aviv Transects`      ~ "~/Data Sheets/Skeleton Folder/Tel Aviv Skeleton",
-    skeleton %in% projects$`Eilat Transects`         ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Transects",
-    skeleton %in% projects$`Eilat Knolls`            ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Knolls",
-    skeleton %in% projects$`Mediterranean Transects` ~ "~/Data Sheets/Skeleton Folder/Bioblitz Skeleton"
+    project %in% projects$`Tel Aviv Transects`      ~ "~/Data Sheets/Skeleton Folder/Tel Aviv Skeleton",
+    project %in% projects$`Eilat Transects`         ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Transects",
+    project %in% projects$`Eilat Knolls`            ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Knolls",
+    project %in% projects$`Mediterranean Transects` ~ "~/Data Sheets/Skeleton Folder/Bioblitz Skeleton"
   )
   
   googledrive::drive_cp(file = skeleton,
