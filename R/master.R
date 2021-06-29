@@ -2,10 +2,16 @@ build_framework <- function(file){
   
   ########  Step 1: Reading the metadata table #############
   # 
-  #   This step reads the metadata file from the input file
+  #   This step reads the metadata file from the input file,
+  #   and stops if project is not in the list of compatible 
+  #   projects for this script.
   
   meta_table <- read_metadata(input_sheet = file)
   
+  project <- unique(meta_table$Project)
+  if (!(project %in% unlist(projects))){
+    stop("Project supplied is not supported.")
+  }
   
   ########  Step 2: Setting expedition name #############
   #
@@ -76,11 +82,23 @@ build_framework <- function(file){
   ########  Step 7: Creating observer sheets  #####################
   #
   #   This step uses the surveyor data to generate spreadsheets and
-  #   sends emails with writing permission for each surveyor.
+  #   send emails with writing permission for each surveyor.
   #   Spreadsheets are located in:
   #   "~/Data Sheets/{this_expedition}/{todays_folder}/
   
   message(glue::glue("Creating spreadsheets...\n\n"))
   
   create_spreadsheets(surveyors_data, expedition_name,folder_name)
+  
+  ########  Step 8: Creating photo folders  #####################
+  #
+  #   This step uses the surveyor data to generate a "Photos" folder,
+  #   multiple transects subfolders, and to send emails with 
+  #   editting permission for each surveyor.
+  #   "Photos" folder is located in:
+  #   "~/Data Sheets/{this_expedition}/{todays_folder}/
+  
+  if (photos_needed(project = project)){
+    create_photo_folders_for_framework(surveyors_data, expedition_name, folder_name)}
+  
 }
