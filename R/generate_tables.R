@@ -92,25 +92,26 @@ googlesheets4::gs4_auth()
 
 source("R/universal_functions.R")
 source("R/observer_tables_functions.R")
+source("R/create_photo_folders.R")
 source("R/master.R")
 
 ########  Step 3: Supplying the metadata table #############
 # 
 #   This step sets the metadata file path.
 
-file <- "input files/Bioblitz Spring 2021/Palmahim 28062021.csv"
+file <- "test files/test photos.csv"
 
 ########  Step 4: Creating data input infrastructure  #####################
 #
 #   This step uses the metadata file to build the infrastructure
 #   needed for data input, including:
-#     - Expedition directory if needed
-#     - Sampling day folder
-#     - metadata uploaded to designated folder
-#     - Observer spreadsheets
+#     - Expedition directory if needed.
+#     - Sampling day folder.
+#     - metadata uploaded to designated folder.
+#     - Observer spreadsheets.
+#     - Photo folders if the project calls for it. 
 #     - Emails with writing permission for each surveyor.
 #   Spreadsheets are located in:
 #   "~/Data Sheets/{this_expedition}/{todays_folder}/
 
 build_framework(file)
-
