@@ -1,3 +1,8 @@
+# Function to test if current project needs photo folders.
+#
+#  Input: Project name
+# Output: TRUE  or FALSE depending on project
+
 photos_needed <- function(project){
   out <- case_when(
     project %in% projects$`Tel Aviv Transects`      ~ FALSE,
@@ -7,6 +12,13 @@ photos_needed <- function(project){
   )
   return(out)
 }
+
+# Function to create photo folders for each surveyor couple.
+#
+#  Input: row of the surveyor data obtained by `get_surveyors_data`,
+#         expedition name, and folder name
+# Output: A number of folders named according to couple deployments,
+#         with subfolders named A-D, created under the "Photos" folder. 
 
 create_photo_folders_row <- function(surveyors_data, expedition_name, folder_name){
   
@@ -26,6 +38,13 @@ create_photo_folders_row <- function(surveyors_data, expedition_name, folder_nam
   })
   grant_writing_permission(spreadsheet_id = photo_folder, vector_of_emails = unlist(surveyors_data$emails))
 }
+
+# Function to create photo folders for all surveyor couples.
+#
+#  Input: Surveyor data obtained by `get_surveyors_data`,
+#         expedition name, and folder name
+# Output: A number of folders named according to couple deployments,
+#         with subfolders named A-D, created under the "Photos" folder. 
   
 create_photo_folders_from_surveyor_data <- function(surveyors_data, expedition_name, folder_name){
   apply(surveyors_data, 1,
@@ -35,6 +54,14 @@ create_photo_folders_from_surveyor_data <- function(surveyors_data, expedition_n
           folder_name = folder_name))
   
 }
+
+# Function to create photo folders framework for all surveyor couples.
+# This function uses the input file as input and can be run individually.
+#
+#  Input: Path of input csv file 
+# Output: A "Photos" folder under the sampling day folder, with
+#         A number of folders named according to couple deployments,
+#         with subfolders named A-D. 
 
 create_photo_folders <- function(file){
   
@@ -56,6 +83,15 @@ create_photo_folders <- function(file){
                                           expedition_name = expedition_name,
                                           folder_name = folder_name)
 }
+
+# Function to create photo folders framework for all surveyor couples.
+# This function runs automatically with `build_framework` if `photos_needed` is TRUE.
+#
+#  Input: Surveyor data obtained by `get_surveyors_data`,
+#         expedition name, and folder name
+# Output: A "Photos" folder under the sampling day folder, with
+#         A number of folders named according to couple deployments,
+#         with subfolders named A-D. 
 
 create_photo_folders_for_framework <- function(surveyors_data, expedition_name, folder_name){
   message(glue::glue("Creating Photos folders...\n\n"))
