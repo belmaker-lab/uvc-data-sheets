@@ -13,7 +13,7 @@ download_meta_sheet <- function(expedition_name, folder_name){
   
   if (unique(meta_table$Project) %in% projects$`Tel Aviv Transects`)
   {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
-    "{`Fish Observer`} and {`Invertebrate Observer`} - {Spot}"))}
+    "{`First Observer`} and {`Second Observer`} - {Spot}"))}
   if (unique(meta_table$Project) %in% projects$`Mediterranean Transects`)
   {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {SiteID}"))}
@@ -94,7 +94,7 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
     observer_worksheet %>% 
-      filter(across(any_of(c("Invertebrate","Abundance",
+      filter(across(any_of(c("Invertebrate|Taxon","Abundance",
                              "Species","Amount","Length","Distance")),
                     .fns = function(x) !is.na(x))) %>% 
       return()
@@ -141,6 +141,48 @@ read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
     return()
 }
 
+# Function to read quadrates data and metadata, and bind them together
+#
+#  Input: spreadsheet ID and a worksheet identifier
+# Output: A tibble describing the quadrate survey data with quadrates metadata
+
+read_quadrate_worksheet <- function(spreadsheet_id, sheet_identifier){
+  quadrate_worksheet <- googlesheets4::read_sheet(spreadsheet_id,sheet_identifier,col_types = "c")
+  message(glue::glue("Waiting for 10 seconds between worksheet"))
+  Sys.sleep(10)
+  quadrate_metadata <- quadrate_worksheet[,1:2] %>%
+    filter(!is.na(Metadata)) %>% 
+    pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
+    mutate(across(.fns = function(x) type.convert(x,as.is = T))) 
+    quadrate_data <- quadrate_worksheet[,-c(1:2)] %>% 
+    filter(!is.na(Quadrate)) %>% 
+    mutate(across(.fns = function(col) replace(x = col, is.na(col), 0)))
+  bind_cols(quadrate_metadata,quadrate_data) %>% 
+    return()
+}
+
+# Function to join quadrate data with the invertebrate sampling data
+#
+#  Input: worksheet identifier of the quadrate sheets,
+#         the worksheets read by the first part of `read_deployment_spreadsheet`,
+#         and a spreadsheet ID object of the deployment.
+# Output: A tibble describing the quadrate survey data with quadrates metadata
+
+add_quadrate_data <- function(quadrates, all_worksheets, spreadsheet_id){
+  all_quadrate_worksheets <- lapply(quadrates, function(sheet_identifier)
+    read_quadrate_worksheet(spreadsheet_id, sheet_identifier))
+  
+  all_quadrate_worksheets_df <- bind_rows(all_quadrate_worksheets)
+  
+  lapply(all_worksheets, function(worksheet){
+    if (unique(worksheet$Group) == "Invertebrates"){
+      return(left_join(worksheet,all_quadrate_worksheets_df,
+                       by = c("Fish Observer", "Invertebrate Observer","Site","Transect","Quadrate")))
+    } else {
+      return(worksheet)
+    }
+  })
+}
 
 # Function to read all worksheets in a deployment spreadsheet
 #
@@ -150,13 +192,22 @@ read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
 
 read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
   samples <- googlesheets4::sheet_properties(googlesheets4::as_sheets_id(spreadsheet_id)) %>% 
-    filter(!str_detect(string = name,"Species List|Readme.txt")) %>% 
+    filter(!str_detect(string = name,"Species List|Readme.txt|Quadrate data")) %>% 
     .$name
   
   all_worksheets <- lapply(samples, function(sheet_identifier)
     read_worksheet(day_metadata, spreadsheet_id, sheet_identifier))
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
+    
+    quadrates <- googlesheets4::sheet_properties(googlesheets4::as_sheets_id(spreadsheet_id)) %>% 
+      filter(str_detect(string = name,"Quadrate data")) %>% 
+      .$name
+    
+    if (length(quadrates) > 0) {
+      all_worksheets <- add_quadrate_data(quadrates, all_worksheets,spreadsheet_id)
+      }
+    
     all_worksheets %>% 
       bind_rows %>% 
       group_by(Site, Transect) %>% 
@@ -172,6 +223,7 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
       return()
     }
 }
+
 
 # Function to read all spreadsheets in a folder.
 # Feature: Added ability to supply a vector of
