@@ -83,8 +83,8 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "EcoCamp October 2020"
-todays_folder   <- "NA 2020-10-15"
+this_expedition <- "Tel Aviv Project"
+todays_folder   <- "Tel Aviv 2021-06-01"
 
 #######  Step 4: Download the data #############
 # 
