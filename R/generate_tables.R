@@ -99,7 +99,7 @@ source("R/master.R")
 # 
 #   This step sets the metadata file path.
 
-file <- "test files/test photos.csv"
+file <- "input files/Tel Aviv 2021/TLV_20210708.csv"
 
 ########  Step 4: Creating data input infrastructure  #####################
 #
