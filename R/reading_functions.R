@@ -64,7 +64,9 @@ read_metadata_columns <- function(day_metadata, worksheet,sheet_identifier){
   deployment_metadata <- worksheet[,1:2] %>%
     filter(!is.na(Metadata)) %>% 
     pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
-    mutate(across(.fns = function(x) type.convert(x,as.is = T))) 
+    mutate(across(.fns = function(x) type.convert(x,as.is = T))) %>% 
+    mutate(across(contains(c("Depth","Visib")) & where(is.logical), as.numeric)) %>% 
+    mutate(across(where(is.logical),as.character)) 
   
   # googlesheets4 does not support hms class at the moment, so we will keep times as chr
   # %>% 
@@ -148,13 +150,14 @@ read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
 
 read_quadrate_worksheet <- function(spreadsheet_id, sheet_identifier){
   quadrate_worksheet <- googlesheets4::read_sheet(spreadsheet_id,sheet_identifier,col_types = "c")
-  message(glue::glue("Waiting for 10 seconds between worksheet"))
+  message(glue::glue("Waiting for 10 seconds between worksheets"))
   Sys.sleep(10)
   quadrate_metadata <- quadrate_worksheet[,1:2] %>%
     filter(!is.na(Metadata)) %>% 
     pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
     mutate(across(.fns = function(x) type.convert(x,as.is = T))) 
-    quadrate_data <- quadrate_worksheet[,-c(1:2)] %>% 
+  
+  quadrate_data <- quadrate_worksheet[,-c(1:2)] %>% 
     filter(!is.na(Quadrate)) %>% 
     mutate(across(.fns = function(col) replace(x = col, is.na(col), 0)))
   bind_cols(quadrate_metadata,quadrate_data) %>% 
@@ -206,7 +209,7 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
     
     if (length(quadrates) > 0) {
       all_worksheets <- add_quadrate_data(quadrates, all_worksheets,spreadsheet_id)
-      }
+    }
     
     all_worksheets %>% 
       bind_rows %>% 
@@ -221,7 +224,7 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
     }) %>% 
       bind_rows() %>%
       return()
-    }
+  }
 }
 
 
@@ -251,7 +254,7 @@ read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, n
   sampling_day_data <- lapply(spreadsheets, function(spreadsheet_id){
     read_deployment_spreadsheet(day_metadata, spreadsheet_id)
   })
-
+  
   sampling_day_data %>%
     bind_rows() %>%
     return()
@@ -291,7 +294,7 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
     googledrive::drive_mkdir(name = "COMPLETE DATA",overwrite = TRUE,
                              path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
     day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_name}"),
-                                                  sheets = list(Data = day_complete_data))
+                                                 sheets = list(Data = day_complete_data))
     googledrive::drive_mv(file = day_spreadsheet, 
                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/"))
   }
@@ -325,7 +328,7 @@ download_expedition_data <- function(expedition_name, upload = FALSE){
   googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
                            path = str_glue("~/Data Sheets/{expedition_name}/"))
   all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
-                                               sheets = list(Data = days_data))
+                                        sheets = list(Data = days_data))
   googledrive::drive_mv(file = all_data, 
                         path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
   
@@ -350,14 +353,14 @@ combine_days_data <- function(expedition_name){
     return(googlesheets4::read_sheet(day_complete_data_id,sheet = "Data"))
   })
   
-    days_data <- days_data %>% bind_rows
-    
-    googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
-                             path = str_glue("~/Data Sheets/{expedition_name}/"))
-    all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
-                                          sheets = list(Data = days_data))
-    googledrive::drive_mv(file = all_data, 
-                          path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
-    
-    return(days_data)
+  days_data <- days_data %>% bind_rows
+  
+  googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
+                           path = str_glue("~/Data Sheets/{expedition_name}/"))
+  all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
+                                        sheets = list(Data = days_data))
+  googledrive::drive_mv(file = all_data, 
+                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  
+  return(days_data)
 }
