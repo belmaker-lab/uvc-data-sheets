@@ -69,8 +69,8 @@ create_observer_working_sheets <- function(project,deployment,spreadsheet,observ
       googlesheets4::sheet_copy(from_ss = spreadsheet,from_sheet = "Observer Table - MASTER",to_ss = spreadsheet,
                                 to_sheet = sheet_identifier)
       googlesheets4::range_write(ss = spreadsheet,sheet = sheet_identifier,
-                                 col_names = F, range = "B2:B4",
-                                 data = as.data.frame(c(observer1,observer2,deployment)),reformat = F)
+                                 col_names = F, range = "B2:B5",
+                                 data = as.data.frame(c(observer1,observer2,deployment, transect_letter)),reformat = F)
     }
   }
   if (project %in% projects$`Eilat Transects`) { 
@@ -83,8 +83,8 @@ create_observer_working_sheets <- function(project,deployment,spreadsheet,observ
       googlesheets4::range_write(ss = spreadsheet,
                                  sheet = str_glue("{sheet_identifier} - CRYPTIC"),
                                  col_names = FALSE,
-                                 range = "B2:B4",
-                                 data = as.data.frame(c(observer1,observer2,deployment)),
+                                 range = "B2:B5",
+                                 data = as.data.frame(c(observer1,observer2,deployment, transect_letter)),
                                  reformat = F)
       googlesheets4::sheet_copy(from_ss = spreadsheet,
                                 from_sheet = "Observer Table - MASTER",
@@ -93,8 +93,8 @@ create_observer_working_sheets <- function(project,deployment,spreadsheet,observ
       googlesheets4::range_write(ss = spreadsheet,
                                  sheet = str_glue("{sheet_identifier} - TRANSIENTS"),
                                  col_names = F, 
-                                 range = "B2:B4",
-                                 data = as.data.frame(c(observer1,observer2,deployment)),reformat = F)
+                                 range = "B2:B5",
+                                 data = as.data.frame(c(observer1,observer2,deployment, transect_letter)),reformat = F)
     } 
   }
   if (project %in% projects$`Eilat Knolls`) {
