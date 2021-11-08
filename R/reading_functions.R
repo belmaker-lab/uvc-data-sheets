@@ -1,4 +1,5 @@
 library(tidyverse)
+source("R/tlv_functions.R")
 
 # Function to obtain the metadata sheet from the metadata folder.
 # 
@@ -9,34 +10,22 @@ library(tidyverse)
 download_meta_sheet <- function(expedition_name, folder_name){
   metadata_id <- googledrive::drive_get(
     path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/{folder_name} - metadata"))$id
-  meta_table <- googlesheets4::read_sheet(metadata_id,"metadata")
+  meta_table <- googlesheets4::read_sheet(metadata_id, "metadata")
   
   if (unique(meta_table$Project) %in% projects$`Tel Aviv Transects`)
-  {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Spot}"))}
   if (unique(meta_table$Project) %in% projects$`Mediterranean Transects`)
-  {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {SiteID}"))}
   if (unique(meta_table$Project) %in% projects$`Eilat Transects`)
-  {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {SiteID}"))}
   if (unique(meta_table$Project) %in% projects$`Eilat Knolls`)
-  {meta_table <- mutate(meta_table,meta_to_deployment_id = str_glue(
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {KnollID}"))}
   
   return(meta_table)
-}
-
-# Function to modify deployment metadata of tel aviv observer tables.
-# A helper function for `read_metadata_columns` function.
-#
-#  Input: a tibble
-# Output: a modified tibble with a Fish/Invertebrates column named "Group"
-
-modify_telaviv_deployment_metadata <- function(deployment_metadata_tbl,sheet_identifier){
-  deployment_metadata_tbl %>% 
-    mutate(Group = if_else(str_detect(sheet_identifier, "Fish"),"Fish", "Invertebrates")) %>% 
-    return()
 }
 
 # Function to modify deployment metadata of eilat transects observer tables.
@@ -47,7 +36,7 @@ modify_telaviv_deployment_metadata <- function(deployment_metadata_tbl,sheet_ide
 
 modify_eilat_transects_deployment_metadata <- function(deployment_metadata_tbl,sheet_identifier){
   deployment_metadata_tbl %>% 
-    mutate(Letter = if_else(str_detect(sheet_identifier,"TRANSIENTS"),"T","C")) %>% 
+    mutate(Letter = if_else(str_detect(sheet_identifier,"TRANSIENTS"), "T", "C")) %>% 
     return()
 }
 
@@ -60,24 +49,21 @@ modify_eilat_transects_deployment_metadata <- function(deployment_metadata_tbl,s
 # Output: A tibble containing the two metadata columns in
 #         a wide format.
 
-read_metadata_columns <- function(day_metadata, worksheet,sheet_identifier){
+read_metadata_columns <- function(day_metadata, worksheet, sheet_identifier){
   deployment_metadata <- worksheet[,1:2] %>%
     filter(!is.na(Metadata)) %>% 
     pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
-    mutate(across(.fns = function(x) type.convert(x,as.is = T))) %>% 
+    mutate(across(.fns = function(x) type.convert(x, as.is = T))) %>% 
     mutate(across(contains(c("Depth","Visib")) & where(is.logical), as.numeric)) %>% 
-    mutate(across(where(is.logical),as.character)) 
+    mutate(across(where(is.logical), as.character)) 
   
   # googlesheets4 does not support hms class at the moment, so we will keep times as chr
   # %>% 
   #   mutate(across(.cols = all_of(c("Time Start","Time End")),
   #                 .fns = hms::parse_hm))
   
-  if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
-    return(modify_telaviv_deployment_metadata(deployment_metadata,sheet_identifier))
-  }
   if (unique(day_metadata$Project) %in% projects$`Eilat Transects`){
-    return(modify_eilat_transects_deployment_metadata(deployment_metadata,sheet_identifier))
+    return(modify_eilat_transects_deployment_metadata(deployment_metadata, sheet_identifier))
   }
   return(deployment_metadata)
 }
@@ -96,8 +82,7 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
     observer_worksheet %>% 
-      filter(across(any_of(c("Invertebrate|Taxon","Abundance",
-                             "Species","Amount","Length","Distance")),
+      filter(across(any_of(c("Species","Amount","Length","Distance")),
                     .fns = function(x) !is.na(x))) %>% 
       return()
   }
@@ -134,57 +119,13 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 # Output: A tibble describing the species survey data with sample metadata
 
 read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
-  worksheet <- googlesheets4::read_sheet(spreadsheet_id,sheet_identifier,col_types = "c")
+  worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c")
   message(glue::glue("Waiting for 10 seconds between worksheet"))
   Sys.sleep(10)
-  sample_metadata <- read_metadata_columns(day_meta, worksheet,sheet_identifier)
-  sample_data <- read_observer_worksheet(day_meta, worksheet,sheet_identifier)
-  bind_cols(sample_metadata,sample_data) %>% 
+  sample_metadata <- read_metadata_columns(day_meta, worksheet, sheet_identifier)
+  sample_data <- read_observer_worksheet(day_meta, worksheet, sheet_identifier)
+  bind_cols(sample_metadata, sample_data) %>% 
     return()
-}
-
-# Function to read quadrates data and metadata, and bind them together
-#
-#  Input: spreadsheet ID and a worksheet identifier
-# Output: A tibble describing the quadrate survey data with quadrates metadata
-
-read_quadrate_worksheet <- function(spreadsheet_id, sheet_identifier){
-  quadrate_worksheet <- googlesheets4::read_sheet(spreadsheet_id,sheet_identifier,col_types = "c")
-  message(glue::glue("Waiting for 10 seconds between worksheets"))
-  Sys.sleep(10)
-  quadrate_metadata <- quadrate_worksheet[,1:2] %>%
-    filter(!is.na(Metadata)) %>% 
-    pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
-    mutate(across(.fns = function(x) type.convert(x,as.is = T))) 
-  
-  quadrate_data <- quadrate_worksheet[,-c(1:2)] %>% 
-    filter(!is.na(Quadrate)) %>% 
-    mutate(across(.fns = function(col) replace(x = col, is.na(col), 0)))
-  bind_cols(quadrate_metadata,quadrate_data) %>% 
-    return()
-}
-
-# Function to join quadrate data with the invertebrate sampling data
-#
-#  Input: worksheet identifier of the quadrate sheets,
-#         the worksheets read by the first part of `read_deployment_spreadsheet`,
-#         and a spreadsheet ID object of the deployment.
-# Output: A tibble describing the quadrate survey data with quadrates metadata
-
-add_quadrate_data <- function(quadrates, all_worksheets, spreadsheet_id){
-  all_quadrate_worksheets <- lapply(quadrates, function(sheet_identifier)
-    read_quadrate_worksheet(spreadsheet_id, sheet_identifier))
-  
-  all_quadrate_worksheets_df <- bind_rows(all_quadrate_worksheets)
-  
-  lapply(all_worksheets, function(worksheet){
-    if (unique(worksheet$Group) == "Invertebrates"){
-      return(left_join(worksheet,all_quadrate_worksheets_df,
-                       by = c("Fish Observer", "Invertebrate Observer","Site","Transect","Quadrate")))
-    } else {
-      return(worksheet)
-    }
-  })
 }
 
 # Function to read all worksheets in a deployment spreadsheet
@@ -195,38 +136,19 @@ add_quadrate_data <- function(quadrates, all_worksheets, spreadsheet_id){
 
 read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
   samples <- googlesheets4::sheet_properties(googlesheets4::as_sheets_id(spreadsheet_id)) %>% 
-    filter(!str_detect(string = name,"Species List|Readme.txt|Quadrate data")) %>% 
+    filter(!str_detect(string = name,"Invertebrates|Species List|Readme.txt|Quadrate data")) %>% 
     .$name
   
   all_worksheets <- lapply(samples, function(sheet_identifier)
     read_worksheet(day_metadata, spreadsheet_id, sheet_identifier))
   
-  if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
-    
-    quadrates <- googlesheets4::sheet_properties(googlesheets4::as_sheets_id(spreadsheet_id)) %>% 
-      filter(str_detect(string = name,"Quadrate data")) %>% 
-      .$name
-    
-    if (length(quadrates) > 0) {
-      all_worksheets <- add_quadrate_data(quadrates, all_worksheets,spreadsheet_id)
-    }
-    
-    all_worksheets %>% 
-      bind_rows %>% 
-      group_by(Site, Transect) %>% 
-      fill(`Time Start`,`Time End`,`Depth Start`,`Depth End`) %>% 
-      ungroup() %>% 
-      return()
-  }
-  else {
-    lapply(all_worksheets, function(df) {
-      mutate(df,across(.fns = as.character))
-    }) %>% 
-      bind_rows() %>%
-      return()
-  }
+  
+  lapply(all_worksheets, function(df) {
+    mutate(df,across(.fns = as.character))
+  }) %>% 
+    bind_rows() %>%
+    return()
 }
-
 
 # Function to read all spreadsheets in a folder.
 # Feature: Added ability to supply a vector of
@@ -291,7 +213,7 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
   day_complete_data <- left_join(day_metadata,day_sample_data, by = c("meta_to_deployment_id"))
   
   if (upload) {
-    googledrive::drive_mkdir(name = "COMPLETE DATA",overwrite = TRUE,
+    googledrive::drive_mkdir(name = "COMPLETE DATA", overwrite = TRUE,
                              path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
     day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_name}"),
                                                  sheets = list(Data = day_complete_data))
@@ -342,6 +264,7 @@ download_expedition_data <- function(expedition_name, upload = FALSE){
 # Output: A tibble containing all of the expedition data,
 #         uploaded into a created folder within
 #         expedition directory
+
 combine_days_data <- function(expedition_name){
   folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
     filter(name != "EXPEDITION DATA") %>% 

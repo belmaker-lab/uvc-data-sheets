@@ -27,7 +27,7 @@ list_projects()
 
 copy_skeleton <- function(project, expedition_name, folder_name, spreadsheet_name) {
   skeleton <- case_when(
-    project %in% projects$`Tel Aviv Transects`      ~ "~/Data Sheets/Skeleton Folder/Tel Aviv Skeleton",
+    project %in% projects$`Tel Aviv Transects`      ~ "~/Data Sheets/Skeleton Folder/Tel Aviv Skeleton 2.0",
     project %in% projects$`Eilat Transects`         ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Transects",
     project %in% projects$`Eilat Knolls`            ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Knolls",
     project %in% projects$`Mediterranean Transects` ~ "~/Data Sheets/Skeleton Folder/Bioblitz Skeleton"

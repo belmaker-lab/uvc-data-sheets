@@ -18,7 +18,7 @@
 # 
 # This script downloads the observer sheets from the belmaker lab Google Drive.
 # 
-# Follow the instuctions below if you wish to download data from the drive.
+# Follow the instructions below if you wish to download data from the drive.
 # Otherwise, modify the functions in `reading_functions.R` files.
 
 ########  Script Prerequisites:   ########################
@@ -48,8 +48,8 @@ source("OAuth/OAuth.R")
 # Step 1 Alternative
 #   Run these lines if you did not run the `OAuth.R` script.
 
-googledrive::drive_auth()
-googlesheets4::gs4_auth() 
+# googledrive::drive_auth()
+# googlesheets4::gs4_auth() 
 
   #  Users should receive these two messages after either Step 1 or Step 1 Alternative:
 #  
@@ -84,19 +84,19 @@ source("R/reading_functions.R")
 #   and the folder of today's sampling.
 
 this_expedition <- "Tel Aviv Project"
-todays_folder   <- "Tel Aviv 2021-01-12"
+todays_folder   <- "Tel Aviv 2021-11-03"
 
 #######  Step 4: Download the data #############
 # 
 #   This step saves today's data as an object in R.
-#   Additionallly, uploads into a folder named COMPLETE DATA
+#   Additionally, uploads into a folder named COMPLETE DATA
 
 download_day_complete_data(this_expedition, todays_folder, upload = TRUE)
 
 #######  Step 5 Combine expedition data #############
 # 
 #   This step saves the expedition data as an object in R.
-#   Additionallly, uploads into a folder named EXPEDITION DATA
+#   Additionally, uploads into a folder named EXPEDITION DATA
 
 combine_days_data(this_expedition)
 
@@ -105,6 +105,6 @@ combine_days_data(this_expedition)
 #   This step is for performing the individual upload of daily data.
 #   Use this if you daily data were not uploaded during the expedition.
 #   This step saves the expedition data as an object in R.
-#   Additionallly, uploads into a folder named EXPEDITION DATA
+#   Additionally, uploads into a folder named EXPEDITION DATA
 
 download_expedition_data(this_expedition, upload = TRUE)

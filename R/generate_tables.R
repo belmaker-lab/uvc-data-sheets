@@ -55,13 +55,14 @@
 
 source("OAuth/OAuth.R")
 
+
 # Step 1 Alternative
 #   Run these lines if you did not run the `OAuth.R` script.
 #   This will use the `googledrive` and `googlesheets4` APIs
 #   which are shared with all other package users (the entire world)
 
-googledrive::drive_auth()
-googlesheets4::gs4_auth() 
+# googledrive::drive_auth()
+# googlesheets4::gs4_auth() 
 
 
 #  Users should receive these two messages after either Step 1 or Step 1 Alternative:
@@ -99,7 +100,7 @@ source("R/master.R")
 # 
 #   This step sets the metadata file path.
 
-file <- "input files/Tel Aviv 2021/TLV_20210708.csv"
+file <- "input files/Tel Aviv 2021/TLV_test_07112021.csv"
 
 ########  Step 4: Creating data input infrastructure  #####################
 #
