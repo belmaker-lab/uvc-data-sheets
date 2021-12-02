@@ -265,7 +265,7 @@ download_expedition_data <- function(expedition_name, upload = FALSE){
 #         uploaded into a created folder within
 #         expedition directory
 
-combine_days_data <- function(expedition_name){
+combine_days_data <- function(expedition_name, upload = TRUE){
   folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
     filter(name != "EXPEDITION DATA") %>% 
     .$name
@@ -278,12 +278,12 @@ combine_days_data <- function(expedition_name){
   
   days_data <- days_data %>% bind_rows
   
-  googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
-                           path = str_glue("~/Data Sheets/{expedition_name}/"))
-  all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
-                                        sheets = list(Data = days_data))
-  googledrive::drive_mv(file = all_data, 
-                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
-  
+  if (upload){ googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
+                                        path = str_glue("~/Data Sheets/{expedition_name}/"))
+    all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
+                                          sheets = list(Data = days_data))
+    googledrive::drive_mv(file = all_data, 
+                          path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  }
   return(days_data)
 }
