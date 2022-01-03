@@ -33,10 +33,10 @@ copy_skeleton <- function(project, expedition_name, folder_name, spreadsheet_nam
     project %in% projects$`Mediterranean Transects` ~ "~/Data Sheets/Skeleton Folder/Bioblitz Skeleton"
   )
   
+  googledrive::local_drive_quiet()
   googledrive::drive_cp(file = skeleton,
                         path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"),
-                        name = spreadsheet_name,
-                        verbose = FALSE)
+                        name = spreadsheet_name)
 }
 
 

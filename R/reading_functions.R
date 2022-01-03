@@ -233,7 +233,8 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
 #         expedition directory
 
 download_expedition_data <- function(expedition_name, upload = FALSE){
-  folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
+  
+  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
     filter(name != "EXPEDITION DATA") %>% 
     .$name
   
@@ -266,7 +267,7 @@ download_expedition_data <- function(expedition_name, upload = FALSE){
 #         expedition directory
 
 combine_days_data <- function(expedition_name, upload = TRUE){
-  folders <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"),verbose = FALSE) %>% 
+  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
     filter(name != "EXPEDITION DATA") %>% 
     .$name
   

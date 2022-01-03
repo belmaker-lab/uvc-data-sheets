@@ -21,19 +21,16 @@ photos_needed <- function(project){
 #         with subfolders named A-D, created under the "Photos" folder. 
 
 create_photo_folders_row <- function(surveyors_data, expedition_name, folder_name){
-  
+  googledrive::local_drive_quiet()
   photo_folder <- googledrive::drive_mkdir(name = surveyors_data$spreadsheet_name,
-                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/"),
-                           verbose = FALSE)
+                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/"))
   
   lapply(unlist(surveyors_data$deployments), function(dep) {
     googledrive::drive_mkdir(name =  as.character(dep),
-                             path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/"),
-                             verbose = FALSE)
+                             path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/"))
     for (transect in LETTERS[4:1]){
       googledrive::drive_mkdir(name = transect,
-                               path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/{as.character(dep)}/"),
-                               verbose = FALSE)
+                               path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/{as.character(dep)}/"))
     }
   })
   grant_writing_permission(spreadsheet_id = photo_folder, vector_of_emails = unlist(surveyors_data$emails))
@@ -65,6 +62,7 @@ create_photo_folders_from_surveyor_data <- function(surveyors_data, expedition_n
 
 create_photo_folders <- function(file){
   
+  googledrive::local_drive_quiet()
   meta_table <- read_metadata(input_sheet = file)
   
   expedition_name <- unique(meta_table$Expedition)
@@ -72,9 +70,7 @@ create_photo_folders <- function(file){
     unique(meta_table$Location),unique(meta_table$Date))
   
   googledrive::drive_mkdir(name = "Photos",
-                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"),
-                           verbose = FALSE)
-  
+                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
   surveyors_data <- get_surveyors_data(input_data = meta_table)
   
   message(glue::glue("Creating Photos folders"))
@@ -94,11 +90,12 @@ create_photo_folders <- function(file){
 #         with subfolders named A-D. 
 
 create_photo_folders_for_framework <- function(surveyors_data, expedition_name, folder_name){
+  
+  googledrive::local_drive_quiet()
   message(glue::glue("Creating Photos folders...\n\n"))
   
   googledrive::drive_mkdir(name = "Photos",
-                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"),
-                           verbose = FALSE)
+                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
   
   create_photo_folders_from_surveyor_data(surveyors_data = surveyors_data,
                                           expedition_name = expedition_name,

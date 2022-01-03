@@ -30,8 +30,8 @@ build_framework <- function(file){
   
   message(glue::glue("Searching for expedition directory named {expedition_name}...\n\n"))
   
-  search_results <- googledrive::drive_get(
-    path = str_glue("~/Data Sheets/{expedition_name}/"))
+  search_results <- googledrive::with_drive_quiet(googledrive::drive_get(
+    path = str_glue("~/Data Sheets/{expedition_name}/")))
   if (nrow(search_results) == 1) {
     message(glue::glue("Found expedition directory named {expedition_name}.\n\n"))
   } else if (nrow(search_results) == 0){

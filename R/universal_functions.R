@@ -32,7 +32,7 @@ get_surveyors_emails()
 
 create_expedition_directory <- function(expedition_name){
   googledrive::drive_mkdir(name = expedition_name,
-                           path = "~/Data Sheets/",verbose = FALSE)
+                           path = "~/Data Sheets/")
 }
 
 # Function to create a folder in Google Sheets named folder name
@@ -46,12 +46,10 @@ create_expedition_directory <- function(expedition_name){
 
 create_main_directory <- function(expedition_name,folder_name) {
   googledrive::drive_mkdir(name = folder_name,
-                           path = str_glue("~/Data Sheets/{expedition_name}/"),
-                           verbose = FALSE)
+                           path = str_glue("~/Data Sheets/{expedition_name}/"))
   dir <- str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")
   googledrive::drive_mkdir(name = "Metadata",
-                           path = dir,
-                           verbose = FALSE)
+                           path = dir)
 }
 
 # Function to get data from input file
@@ -95,8 +93,8 @@ upload_meta_sheet <- function(meta_table, expedition_name, folder_name){
   spreadsheet_name <- str_glue("{folder_name} - metadata")
   meta_spreadsheet <- googlesheets4::gs4_create(name = spreadsheet_name,
                                                 sheets = list(metadata = meta_table))
-  googledrive::drive_mv(file = meta_spreadsheet, verbose = FALSE,
-                        path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/"))
+  googledrive::with_drive_quiet(googledrive::drive_mv(file = meta_spreadsheet,
+                        path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/")))
 }
 
 # Function to get surveyors names, emails, and number of dives in current day:
@@ -143,11 +141,12 @@ get_surveyors_data <- function(input_data,
 # Output: Reading permission of the spreadsheet sent to all emails in the vector
 
 grant_reading_permission <- function(spreadsheet_id, vector_of_emails){
+  googledrive::local_drive_quiet()
   lapply(vector_of_emails, function(email) {
     if (is.na(email)) { warning("No Email Assigned to Surveyor, permission not granted")
     } else {
       googledrive::drive_share(file = spreadsheet_id, role = "reader", type = "user",
-                               emailAddress = email,verbose = F)
+                               emailAddress = email)
     }
   }
   )
@@ -159,8 +158,8 @@ grant_reading_permission <- function(spreadsheet_id, vector_of_emails){
 # Output: Reading permission of the metadata spreadsheet sent to all emails in the surveyor data table
 
 grant_metadata_reading_permission <- function(expedition_name, folder_name, surveyor_data){
-  id <- googledrive::drive_get(verbose = FALSE,
-    str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/{folder_name} - metadata"))$id
+  googledrive::local_drive_quiet()
+  id <- googledrive::drive_get(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/{folder_name} - metadata"))$id
   day_surveyors <- unlist(surveyor_data$emails) %>% unique
   grant_reading_permission(spreadsheet_id = googledrive::as_id(id),vector_of_emails = day_surveyors)
 }
