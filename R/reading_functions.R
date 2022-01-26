@@ -193,7 +193,7 @@ read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, n
 #         alternatively - uploaded into a created folder within
 #         folder name.
 
-download_day_complete_data <- function(expedition_name, folder_name,upload = FALSE){
+create_day_complete_data <- function(expedition_name, folder_name,upload = FALSE){
   day_metadata <- download_meta_sheet(expedition_name, folder_name)
   day_sample_data <- read_sampling_day_data(day_metadata, expedition_name, folder_name)
   
@@ -224,15 +224,15 @@ download_day_complete_data <- function(expedition_name, folder_name,upload = FAL
   return(day_complete_data)
 }
 
-# Function to download individual days data, join them, 
-# and upload to a EXPEDITION DATA folder.
+# Function to create individual days data, join them, 
+# and upload them to a EXPEDITION DATA folder.
 #  Input: Expedition name,
 #         optional: whether to upload individual day data
 # Output: A tibble containing all of the expedition data,
 #         uploaded into a created folder within
 #         expedition directory
 
-download_expedition_data <- function(expedition_name, upload = FALSE){
+create_expedition_data <- function(expedition_name, upload = FALSE){
   
   folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
     filter(name != "EXPEDITION DATA") %>% 
@@ -243,7 +243,7 @@ download_expedition_data <- function(expedition_name, upload = FALSE){
     if (upload) {
       message(glue::glue("{folder_name} data uploaded"))
     }
-    return(download_day_complete_data(expedition_name, folder_name, upload))
+    return(create_day_complete_data(expedition_name, folder_name, upload))
   })
   
   days_data <- days_data %>% bind_rows
