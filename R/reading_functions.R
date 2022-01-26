@@ -182,6 +182,29 @@ read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, n
     return()
 }
 
+# Function to store a local backup of the created expedition data
+# in a dedicated folder for local backups. Adds a warning column
+# to not use the backup for analyses.
+# 
+#  Input: Complete expedition data, expedition name.
+# Output: Local `.csv` file in a dedicated folder stating the
+#         date and time of its creation.
+
+store_local_backup <- function(days_data, expedition_name){
+  
+  if (!dir.exists(str_glue("Local Backups/{expedition_name}/")))
+    dir.create(str_glue("Local Backups/{expedition_name}/"), recursive = TRUE)
+  
+  current_time <- Sys.time() %>% as.character() %>% 
+    str_replace_all(":","-")
+  
+  backup <- days_data %>% 
+    mutate(Flag = "This is a local backup file and should not be used for further analyses!")
+  
+  write_csv(backup, file = str_glue("Local Backups/{expedition_name}/{expedition_name} - local version created {current_time}.csv"))
+  
+}
+
 # Function to join day metadata tibble with sampling data
 # Feature: Can upload complete tibble to a COMPLETE DATA
 #          folder within the day's folder.
@@ -193,7 +216,7 @@ read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, n
 #         alternatively - uploaded into a created folder within
 #         folder name.
 
-create_day_complete_data <- function(expedition_name, folder_name,upload = FALSE){
+create_day_complete_data <- function(expedition_name, folder_name, upload_individual_days = FALSE){
   day_metadata <- download_meta_sheet(expedition_name, folder_name)
   day_sample_data <- read_sampling_day_data(day_metadata, expedition_name, folder_name)
   
@@ -212,7 +235,7 @@ create_day_complete_data <- function(expedition_name, folder_name,upload = FALSE
   
   day_complete_data <- left_join(day_metadata,day_sample_data, by = c("meta_to_deployment_id"))
   
-  if (upload) {
+  if (upload_individual_days) {
     googledrive::drive_mkdir(name = "COMPLETE DATA", overwrite = TRUE,
                              path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
     day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_name}"),
@@ -225,14 +248,16 @@ create_day_complete_data <- function(expedition_name, folder_name,upload = FALSE
 }
 
 # Function to create individual days data, join them, 
-# and upload them to a EXPEDITION DATA folder.
+# and upload them to a EXPEDITION DATA folder. Also creates
+# a local backup using `store_local_backup`.
+#
 #  Input: Expedition name,
 #         optional: whether to upload individual day data
 # Output: A tibble containing all of the expedition data,
 #         uploaded into a created folder within
 #         expedition directory
 
-create_expedition_data <- function(expedition_name, upload = FALSE){
+create_expedition_data <- function(expedition_name, upload_individual_days = TRUE){
   
   folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
     filter(name != "EXPEDITION DATA") %>% 
@@ -240,20 +265,22 @@ create_expedition_data <- function(expedition_name, upload = FALSE){
   
   days_data <- lapply(folders, function(folder_name){
     message(glue::glue("Downloading data from {folder_name}"))
-    if (upload) {
+    if (upload_individual_days) {
       message(glue::glue("{folder_name} data uploaded"))
     }
-    return(create_day_complete_data(expedition_name, folder_name, upload))
+    return(create_day_complete_data(expedition_name, folder_name, upload_individual_days))
   })
   
   days_data <- days_data %>% bind_rows
   
-  googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
+  googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
                            path = str_glue("~/Data Sheets/{expedition_name}/"))
   all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
                                         sheets = list(Data = days_data))
   googledrive::drive_mv(file = all_data, 
                         path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  
+  store_local_backup(days_data, expedition_name)
   
   return(days_data)
 }
@@ -261,12 +288,14 @@ create_expedition_data <- function(expedition_name, upload = FALSE){
 
 # Function to join individual day complete data, 
 # and upload to a EXPEDITION DATA folder.
+# Also creates a local backup using `store_local_backup`.
+#
 #  Input: Expedition name
 # Output: A tibble containing all of the expedition data,
 #         uploaded into a created folder within
 #         expedition directory
 
-combine_days_data <- function(expedition_name, upload = TRUE){
+join_days_data <- function(expedition_name){
   folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
     filter(name != "EXPEDITION DATA") %>% 
     .$name
@@ -279,12 +308,14 @@ combine_days_data <- function(expedition_name, upload = TRUE){
   
   days_data <- days_data %>% bind_rows
   
-  if (upload){ googledrive::drive_mkdir(name = "EXPEDITION DATA",overwrite = TRUE,
-                                        path = str_glue("~/Data Sheets/{expedition_name}/"))
-    all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
-                                          sheets = list(Data = days_data))
-    googledrive::drive_mv(file = all_data, 
-                          path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
-  }
+  googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
+                           path = str_glue("~/Data Sheets/{expedition_name}/"))
+  all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
+                                        sheets = list(Data = days_data))
+  googledrive::drive_mv(file = all_data, 
+                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  
+  store_local_backup(days_data, expedition_name)
+  
   return(days_data)
 }
