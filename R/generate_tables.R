@@ -33,13 +33,13 @@
 ########  Script Prerequisites:   ########################
 # 
 # This script was written using: 
-#   R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
+#   R version 4.1.0 (2021-05-18) -- "Camp Pontanezen"
 # and using the following packages:
-#   tidyverse >= 1.3.0
-#   googlesheets4 >= 0.2.0
-#   googledrive >= 1.0.1
-#   lubridate >= 1.7.4
-#   glue >= 1.4.1
+#   tidyverse >= 1.3.1
+#   googlesheets4 >= 1.0.0
+#   googledrive >= 2.0.0
+#   lubridate >= 1.7.10
+#   glue >= 1.4.2
 #
 # Please make sure to have these installed prior to running this script.
 

@@ -16,7 +16,7 @@
 # 
 # 
 # 
-# This script downloads the observer sheets from the belmaker lab Google Drive.
+# This script merges the observer sheets from the belmaker lab Google Drive into a formated sheet and downloads it.
 # 
 # Follow the instructions below if you wish to download data from the drive.
 # Otherwise, modify the functions in `reading_functions.R` files.
@@ -24,12 +24,12 @@
 ########  Script Prerequisites:   ########################
 # 
 # This script was written using: 
-#   R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
+#   R version 4.1.0 (2021-05-18) -- "Camp Pontanezen"
 # and using the following packages:
-#   tidyverse >= 1.3.0
-#   googlesheets4 >= 0.2.0
-#   googledrive >= 1.0.1
-#   lubridate >= 1.7.4
+#   tidyverse >= 1.3.1
+#   googlesheets4 >= 1.0.0
+#   googledrive >= 2.0.0
+#   lubridate >= 1.7.10
 #
 # Please make sure to have these installed prior to running this script.
 
@@ -83,7 +83,7 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Tel Aviv Project"
+this_expedition <- "Bioblitz Fall 2021"
 todays_folder   <- "Tel Aviv 2021-11-03"
 
 #######  Step 4: Download the data #############
@@ -91,14 +91,14 @@ todays_folder   <- "Tel Aviv 2021-11-03"
 #   This step saves today's data as an object in R.
 #   Additionally, uploads into a folder named COMPLETE DATA
 
-download_day_complete_data(this_expedition, todays_folder, upload = TRUE)
+create_day_complete_data(this_expedition, todays_folder, upload_individual_days = TRUE)
 
 #######  Step 5 Combine expedition data #############
 # 
 #   This step saves the expedition data as an object in R.
 #   Additionally, uploads into a folder named EXPEDITION DATA
 
-combine_days_data(this_expedition)
+join_days_data(this_expedition)
 
 #######  Step 5 Alternative: Download entire expedition data #############
 # 
@@ -107,4 +107,4 @@ combine_days_data(this_expedition)
 #   This step saves the expedition data as an object in R.
 #   Additionally, uploads into a folder named EXPEDITION DATA
 
-download_expedition_data(this_expedition, upload = TRUE)
+create_expedition_data(this_expedition, upload_individual_days = TRUE)
