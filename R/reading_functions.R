@@ -121,7 +121,6 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
   worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c",
                                          .name_repair = function(x) suppressMessages(make.unique(x)))
-  message(glue::glue("Waiting for 2 seconds between worksheet"))
   Sys.sleep(2)
   sample_metadata <- read_metadata_columns(day_meta, worksheet, sheet_identifier)
   sample_data <- read_observer_worksheet(day_meta, worksheet, sheet_identifier)
@@ -234,7 +233,17 @@ create_day_complete_data <- function(expedition_name, folder_name, upload_indivi
   {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Knoll}"))}
   
-  # TODO! Add Tests
+  unique_ids_meta <- bind_cols(meta_to_deployment_id = day_metadata$meta_to_deployment_id)
+  unique_ids_samples <- bind_cols(meta_to_deployment_id = day_sample_data$meta_to_deployment_id)
+  
+  mismatches <- anti_join(unique_ids_meta, unique_ids_samples,
+                          by = "meta_to_deployment_id") %>%
+    pull(meta_to_deployment_id)
+  
+  if (length(mismatches) > 0){
+    cli::cli_abort("Error in {.val {folder_name}} - {cli::qty(mismatches)} Mismatching identifier{?s}: {.val {mismatches}}. 
+                   Check Google Drive folder for any input errors.")
+  }
   
   day_complete_data <- left_join(day_metadata,day_sample_data, by = c("meta_to_deployment_id"))
   
