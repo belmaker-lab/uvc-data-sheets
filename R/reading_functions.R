@@ -119,9 +119,10 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 # Output: A tibble describing the species survey data with sample metadata
 
 read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
-  worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c")
-  message(glue::glue("Waiting for 10 seconds between worksheet"))
-  Sys.sleep(10)
+  worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c",
+                                         .name_repair = function(x) suppressMessages(make.unique(x)))
+  message(glue::glue("Waiting for 2 seconds between worksheet"))
+  Sys.sleep(2)
   sample_metadata <- read_metadata_columns(day_meta, worksheet, sheet_identifier)
   sample_data <- read_observer_worksheet(day_meta, worksheet, sheet_identifier)
   bind_cols(sample_metadata, sample_data) %>% 
@@ -232,6 +233,8 @@ create_day_complete_data <- function(expedition_name, folder_name, upload_indivi
   if (unique(day_metadata$Project) %in% projects$`Eilat Knolls`)
   {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Knoll}"))}
+  
+  # TODO! Add Tests
   
   day_complete_data <- left_join(day_metadata,day_sample_data, by = c("meta_to_deployment_id"))
   
