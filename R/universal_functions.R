@@ -9,6 +9,19 @@ library(tidyverse)
 
 ####      Housekeeping Functions         ####
 
+# Function to obtain ID of the Data Sheets folder in Drive
+# This runs automatically when loading all the functions.
+#  Input: None
+# Output: variable names `data_sheets_id` of class `drive_id`
+
+get_data_sheets_id <- function(){
+  data_sheets_id <<- googledrive::drive_find(pattern = "Data Sheets", type = "folder",
+                                            q = "'root' in parents", n_max = 1)$id
+}
+
+get_data_sheets_id()
+
+
 # Function to obtain surveyors emails
 # This runs automatically when loading all the functions.
 #  Input: None
@@ -16,7 +29,8 @@ library(tidyverse)
 #         containing names and emails of all active surveyors
 
 get_surveyors_emails <- function() {
-  id <- googledrive::drive_get("~/Data Sheets/Surveyors")$id
+  id <- googledrive::drive_find(pattern = "Surveyors", type = "spreadsheet",
+                                q = str_glue("'{data_sheets_id}' in parents"))$id
   email_lookup_table <<- googlesheets4::read_sheet(ss = id,sheet = "Names") 
 }
 
