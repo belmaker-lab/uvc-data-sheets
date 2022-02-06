@@ -101,7 +101,7 @@ build_framework <- function(file){
   #   "Photos" folder is located in:
   #   "~/Data Sheets/{this_expedition}/{todays_folder}/
   
-  # if (photos_needed(project = project)){
-  #   create_photo_folders_for_framework(surveyors_data, expedition_name, folder_name)}
+  if (photos_needed(project = project)){
+    create_photo_folders_for_framework(surveyors_data, folder_dribble)}
   
 }
