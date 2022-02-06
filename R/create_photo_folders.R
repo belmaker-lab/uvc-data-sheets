@@ -20,17 +20,17 @@ photos_needed <- function(project){
 # Output: A number of folders named according to couple deployments,
 #         with subfolders named A-D, created under the "Photos" folder. 
 
-create_photo_folders_row <- function(surveyors_data, expedition_name, folder_name){
+create_photo_folders_row <- function(surveyors_data, photo_folder_dribble){
   googledrive::local_drive_quiet()
   photo_folder <- googledrive::drive_mkdir(name = surveyors_data$spreadsheet_name,
-                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/"))
+                           path = photo_folder_dribble)
   
   lapply(unlist(surveyors_data$deployments), function(dep) {
-    googledrive::drive_mkdir(name =  as.character(dep),
-                             path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/"))
-    for (transect in LETTERS[4:1]){
+    surveyors_folder <- googledrive::drive_mkdir(name =  as.character(dep),
+                             path = photo_folder)
+    for (transect in LETTERS[1:4]){
       googledrive::drive_mkdir(name = transect,
-                               path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Photos/{surveyors_data$spreadsheet_name}/{as.character(dep)}/"))
+                               path = surveyors_folder)
     }
   })
   grant_writing_permission(spreadsheet_id = photo_folder, vector_of_emails = unlist(surveyors_data$emails))
@@ -43,13 +43,11 @@ create_photo_folders_row <- function(surveyors_data, expedition_name, folder_nam
 # Output: A number of folders named according to couple deployments,
 #         with subfolders named A-D, created under the "Photos" folder. 
   
-create_photo_folders_from_surveyor_data <- function(surveyors_data, expedition_name, folder_name){
+create_photo_folders_from_surveyor_data <- function(surveyors_data, photo_folder_dribble){
   apply(surveyors_data, 1,
         function(row) create_photo_folders_row(
           surveyors_data = row,
-          expedition_name = expedition_name,
-          folder_name = folder_name))
-  
+          photo_folder_dribble = photo_folder_dribble))
 }
 
 # Function to create photo folders framework for all surveyor couples.
@@ -59,6 +57,8 @@ create_photo_folders_from_surveyor_data <- function(surveyors_data, expedition_n
 # Output: A "Photos" folder under the sampling day folder, with
 #         A number of folders named according to couple deployments,
 #         with subfolders named A-D. 
+# NOTE: Not tested as far as I remember,
+# I also don't see much use for it as `create_photo_folders_for_framework` exists...
 
 create_photo_folders <- function(file){
   
@@ -89,15 +89,14 @@ create_photo_folders <- function(file){
 #         A number of folders named according to couple deployments,
 #         with subfolders named A-D. 
 
-create_photo_folders_for_framework <- function(surveyors_data, expedition_name, folder_name){
+create_photo_folders_for_framework <- function(surveyors_data, folder_dribble){
   
   googledrive::local_drive_quiet()
-  message(glue::glue("Creating Photos folders...\n\n"))
+  cli::cli_text("Creating Photos folders...\n\n")
   
-  googledrive::drive_mkdir(name = "Photos",
-                           path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
+  photo_folder_dribble <- googledrive::drive_mkdir(name = "Photos",
+                           path = folder_dribble)
   
   create_photo_folders_from_surveyor_data(surveyors_data = surveyors_data,
-                                          expedition_name = expedition_name,
-                                          folder_name = folder_name)
+                                          photo_folder_dribble = photo_folder_dribble)
 }
