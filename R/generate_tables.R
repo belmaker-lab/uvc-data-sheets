@@ -40,6 +40,7 @@
 #   googledrive >= 2.0.0
 #   lubridate >= 1.7.10
 #   glue >= 1.4.2
+#   cli >= 3.0.1
 #
 # Please make sure to have these installed prior to running this script.
 
@@ -100,7 +101,7 @@ source("R/master.R")
 # 
 #   This step sets the metadata file path.
 
-file <- "test files/test no verbose.csv"
+file <- "test files/test dribble workflow.csv"
 
 ########  Step 4: Creating data input infrastructure  #####################
 #

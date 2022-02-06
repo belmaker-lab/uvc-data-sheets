@@ -30,6 +30,8 @@
 #   googlesheets4 >= 1.0.0
 #   googledrive >= 2.0.0
 #   lubridate >= 1.7.10
+#   glue >= 1.4.2
+#   cli >= 3.0.1
 #
 # Please make sure to have these installed prior to running this script.
 
@@ -83,15 +85,15 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Bioblitz Fall 2021"
-todays_folder   <- "Tel Aviv 2021-11-03"
+this_expedition <- "Eilat Transects June 2020"
+todays_folder   <- "North Beach 2020-06-16"
 
 #######  Step 4: Download the data #############
 # 
 #   This step saves today's data as an object in R.
 #   Additionally, uploads into a folder named COMPLETE DATA
 
-create_day_complete_data(this_expedition, todays_folder, upload_individual_days = TRUE)
+create_day_complete_data(this_expedition, todays_folder, upload_individual_days = FALSE)
 
 #######  Step 5 Combine expedition data #############
 # 
