@@ -80,7 +80,7 @@ create_observer_working_sheets <- function(project,deployment,spreadsheet,observ
     } 
   }
   if (project %in% projects$`Mediterranean Transects`) {
-    for (transect_letter in LETTERS[5:1]){
+    for (transect_letter in LETTERS[4:1]){
       sheet_identifier <- str_glue("Site {deployment} - Transect {transect_letter}")
       googlesheets4::sheet_copy(from_ss = spreadsheet,from_sheet = "Observer Table - MASTER",to_ss = spreadsheet,
                                 to_sheet = sheet_identifier)
