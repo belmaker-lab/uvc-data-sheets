@@ -45,8 +45,8 @@ get_surveyors_emails()
 # Output: Folder created in Google Drive
 
 create_expedition_directory <- function(expedition_name){
-  googledrive::drive_mkdir(name = expedition_name,
-                           path = "~/Data Sheets/")
+  return(googledrive::drive_mkdir(name = expedition_name,
+                           path = data_sheets_id))
 }
 
 # Function to create a folder in Google Sheets named folder name
@@ -58,12 +58,9 @@ create_expedition_directory <- function(expedition_name){
 # Output: Folder created in Google Drive, under expedition folder,
 #         with a child folder named "Metadata"
 
-create_main_directory <- function(expedition_name,folder_name) {
-  googledrive::drive_mkdir(name = folder_name,
-                           path = str_glue("~/Data Sheets/{expedition_name}/"))
-  dir <- str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")
-  googledrive::drive_mkdir(name = "Metadata",
-                           path = dir)
+create_main_directory <- function(expedition_dribble, folder_name) {
+  return(googledrive::drive_mkdir(name = folder_name, 
+                                  path = expedition_dribble))
 }
 
 # Function to get data from input file
@@ -75,7 +72,7 @@ create_main_directory <- function(expedition_name,folder_name) {
 #         is renamed First/Second.
 
 read_metadata <- function(input_sheet){
-  input <-  read_csv(input_sheet)
+  input <-  read_csv(input_sheet, show_col_types = FALSE)
   if ("Fish Observer" %in% colnames(input))
     input <- input %>% rename('First Observer' = "Fish Observer")
   if ("Invertebrate Observer" %in% colnames(input))
@@ -103,12 +100,14 @@ read_metadata <- function(input_sheet){
 #         Location name (used in `create_main_directory` function) 
 # Output: Metadata table uploaded to Metadata folder 
 
-upload_meta_sheet <- function(meta_table, expedition_name, folder_name){
-  spreadsheet_name <- str_glue("{folder_name} - metadata")
-  meta_spreadsheet <- googlesheets4::gs4_create(name = spreadsheet_name,
+upload_meta_sheet <- function(meta_table, folder_dribble){
+  spreadsheet_name <- str_glue("{folder_dribble$name} - metadata")
+  meta_spreadsheet <- googlesheets4::gs4_create(name = spreadsheet_name, 
                                                 sheets = list(metadata = meta_table))
+  metadata_dir <- googledrive::with_drive_quiet(
+    googledrive::drive_mkdir(name = "Metadata", path = folder_dribble))
   googledrive::with_drive_quiet(googledrive::drive_mv(file = meta_spreadsheet,
-                        path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/")))
+                                                      path = metadata_dir))
 }
 
 # Function to get surveyors names, emails, and number of dives in current day:
@@ -196,6 +195,32 @@ grant_writing_permission <- function(spreadsheet_id, vector_of_emails){
   )
 }
 
+# Function to show cli-style messages notifying spreadsheet creation.
+# A helper function for `create_spreadsheets`
+#
+#  Input: Spreadsheet name, usually names of the surveyor pair
+# Output: CLI-formatted message
+
+notify_spreadsheet_creation <- function(spreadsheet_name) {
+  cli::cli_div(theme = list(span.emph = list("font-style" = "regular",
+                                             "color" = "cyan")))
+  cli::cli_text("Creating spreadsheet for {.emph {spreadsheet_name}}")
+  cli::cli_end()
+}
+
+# Function to show cli-style messages notifying the emails being sent.
+# A helper function for `create_spreadsheets`
+#
+#  Input: Spreadsheet name, usually names of the surveyor pair
+# Output: CLI-formatted message
+
+notify_email_sending <- function(spreadsheet_name) {
+  cli::cli_div(theme = list(span.emph = list("font-style" = "regular",
+                                             "color" = "cyan")))
+  cli::cli_text("Sending emails to {.emph {spreadsheet_name}}")
+  cli::cli_end()
+}
+
 # Functions to create observers tables, place them in folder name, 
 # create individual sheets for each transect, and give writing permissions to surveyors
 #  Input: row of the surveyor data obtained by `get_surveyors_data`,
@@ -204,11 +229,10 @@ grant_writing_permission <- function(spreadsheet_id, vector_of_emails){
 #   Note: This function operates on a single row in a tibble
 
 
-create_spreadsheets_row <- function(surveyors_data, expedition_name, folder_name,project) {
-  message(glue::glue("Creating spreadsheet for {surveyors_data$spreadsheet_name}"))
+create_spreadsheets_row <- function(surveyors_data, folder_dribble, project) {
+  notify_spreadsheet_creation(surveyors_data$spreadsheet_name)
   spreadsheet <- suppressMessages(copy_skeleton(project = project,
-                               expedition_name = expedition_name,
-                               folder_name = folder_name,
+                               folder_dribble = folder_dribble,
                                spreadsheet_name = surveyors_data$spreadsheet_name))
 
   lapply(unlist(surveyors_data$deployments), function(dep) {
@@ -219,7 +243,7 @@ create_spreadsheets_row <- function(surveyors_data, expedition_name, folder_name
   )
 
   suppressMessages(delete_skeleton_sheets(project = project, spreadsheet = spreadsheet))
-  message(glue::glue("Sending emails to {surveyors_data$spreadsheet_name}"))
+  notify_email_sending(surveyors_data$spreadsheet_name)
   grant_writing_permission(spreadsheet_id = spreadsheet, vector_of_emails = unlist(surveyors_data$emails))
 }
 
@@ -231,13 +255,12 @@ create_spreadsheets_row <- function(surveyors_data, expedition_name, folder_name
 # Output: Spreadsheets ready for surveyors data :)
 #   Note: This function operates on a single row in a tibble
 
-create_spreadsheets <- function(surveyors_data, expedition_name, folder_name){
+create_spreadsheets <- function(surveyors_data, folder_dribble){
   project <- unique(surveyors_data$Project)
   apply(surveyors_data, 1,
         function(row) create_spreadsheets_row(
           surveyors_data = row,
-          expedition_name = expedition_name,
-          folder_name = folder_name,
+          folder_dribble = folder_dribble,
           project = project))
   
 }
