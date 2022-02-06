@@ -1,15 +1,37 @@
 library(tidyverse)
 source("R/tlv_functions.R")
 
+
+# Function to obtain day folder dribble from Expedition and Folder names
+# 
+#  Input: Expedition name and folder name
+# Output: folder dribble for the sampling day folder
+
+get_day_folder_dribble <- function(expedition_name, folder_name){
+  expedition_folder_id <- googledrive::drive_find(pattern = expedition_name,
+                                                type = "folder", n_max = 1,
+                                                q = str_glue("'{data_sheets_id}' in parents"))$id
+  folder_dribble <- googledrive::drive_find(pattern = folder_name, type = "folder",
+                                                  q = str_glue("'{expedition_folder_id}' in parents"), n_max = 1)
+  return(folder_dribble)
+}
+
 # Function to obtain the metadata sheet from the metadata folder.
 # 
 #  Input: Expedetion name, folder name.
 # Output: a tibble containing the sampling day metadata 
 #         with an additional `meta_to_site` column
 
-download_meta_sheet <- function(expedition_name, folder_name){
-  metadata_id <- googledrive::drive_get(
-    path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/Metadata/{folder_name} - metadata"))$id
+download_meta_sheet <- function(folder_dribble){
+  
+  metadata_folder_id <- googledrive::drive_find(pattern = "Metadata",
+                                                  type = "folder", n_max = 1,
+                                                  q = str_glue("'{folder_dribble$id}' in parents"))$id
+  
+  metadata_id <- googledrive::drive_find(pattern = str_glue("{folder_dribble$name} - metadata"), 
+                                         type = "spreadsheet", n_max = 1, 
+                                         q = str_glue("'{metadata_folder_id}' in parents"))
+  
   meta_table <- googlesheets4::read_sheet(metadata_id, "metadata")
   
   if (unique(meta_table$Project) %in% projects$`Tel Aviv Transects`)
@@ -34,7 +56,7 @@ download_meta_sheet <- function(expedition_name, folder_name){
 #  Input: a tibble
 # Output: a modified tibble with a T/C column named "Letter"
 
-modify_eilat_transects_deployment_metadata <- function(deployment_metadata_tbl,sheet_identifier){
+modify_eilat_transects_deployment_metadata <- function(deployment_metadata_tbl, sheet_identifier){
   deployment_metadata_tbl %>% 
     mutate(Letter = if_else(str_detect(sheet_identifier,"TRANSIENTS"), "T", "C")) %>% 
     return()
@@ -118,12 +140,12 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 #         spreadsheet ID, and a worksheet identifier
 # Output: A tibble describing the species survey data with sample metadata
 
-read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
+read_worksheet <- function(day_metadata, spreadsheet_id, sheet_identifier){
   worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c",
                                          .name_repair = ~ vctrs::vec_as_names(..., repair = "unique", quiet = TRUE))
   Sys.sleep(2)
-  sample_metadata <- read_metadata_columns(day_meta, worksheet, sheet_identifier)
-  sample_data <- read_observer_worksheet(day_meta, worksheet, sheet_identifier)
+  sample_metadata <- read_metadata_columns(day_metadata, worksheet, sheet_identifier)
+  sample_data <- read_observer_worksheet(day_metadata, worksheet, sheet_identifier)
   bind_cols(sample_metadata, sample_data) %>% 
     return()
 }
@@ -161,14 +183,14 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
 #         supplied folder or alternatively, from
 #         selected spreadsheets.
 
-read_sampling_day_data <- function(day_metadata, expedition_name, folder_name, names = NULL){
+read_sampling_day_data <- function(day_metadata, folder_dribble, names = NULL){
   if (is.null(names)){
-    spreadsheets <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")) %>% 
+    spreadsheets <- googledrive::drive_ls(path = folder_dribble) %>% 
       filter(!name  %in% c("Metadata","Photos","COMPLETE DATA")) %>% 
       .$id
   }
   else{
-    spreadsheets <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")) %>% 
+    spreadsheets <- googledrive::drive_ls(path = folder_dribble) %>% 
       filter(name  %in% names) %>% 
       .$id
   }
@@ -209,16 +231,20 @@ store_local_backup <- function(days_data, expedition_name){
 # Feature: Can upload complete tibble to a COMPLETE DATA
 #          folder within the day's folder.
 # 
-#  Input: Expedition name, folder name, optional: 
-#         logical value stating whether to upload
-#         or not (DEFAULT)
+#  Input: folder_id of the specific day, logical value stating 
+#         whether to upload or not (DEFAULT)
 # Output: A tibble containing all of the sampling day data,
 #         alternatively - uploaded into a created folder within
 #         folder name.
 
-create_day_complete_data <- function(expedition_name, folder_name, upload_individual_days = FALSE){
-  day_metadata <- download_meta_sheet(expedition_name, folder_name)
-  day_sample_data <- read_sampling_day_data(day_metadata, expedition_name, folder_name)
+create_day_complete_data <- function(folder_id, upload_individual_days = FALSE){
+  
+  folder_dribble <- googledrive::drive_get(id = folder_id)
+  
+  cli::cli_alert_info("Reading data from {.val {folder_dribble$name}}")
+
+  day_metadata <- download_meta_sheet(folder_dribble)
+  day_sample_data <- read_sampling_day_data(day_metadata, folder_dribble)
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`)
   {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
@@ -241,19 +267,25 @@ create_day_complete_data <- function(expedition_name, folder_name, upload_indivi
     pull(meta_to_deployment_id)
   
   if (length(mismatches) > 0){
-    cli::cli_abort("Error in {.val {folder_name}} - {cli::qty(mismatches)} Mismatching identifier{?s}: {.val {mismatches}}. 
+    cli::cli_abort("Error in {.val {folder_dribble$name}} - {cli::qty(mismatches)} Mismatching identifier{?s}: {.val {mismatches}}. 
                    Check Google Drive folder for any input errors.")
   }
   
   day_complete_data <- left_join(day_metadata,day_sample_data, by = c("meta_to_deployment_id"))
   
   if (upload_individual_days) {
-    googledrive::drive_mkdir(name = "COMPLETE DATA", overwrite = TRUE,
-                             path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
-    day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_name}"),
+    search_results <- googledrive::with_drive_quiet(
+      googledrive::drive_find(pattern = "COMPLETE DATA", type = "folder", n_max = 1,
+                              q = str_glue("'{folder_id}' in parents")))
+    complete_data_folder <-  search_results
+    if (nrow(search_results) == 0) {
+      complete_data_folder <- googledrive::drive_mkdir(name = "COMPLETE DATA", 
+                                                       overwrite = TRUE, path = folder_dribble)
+    }
+    day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_dribble$name}"),
                                                  sheets = list(Data = day_complete_data))
-    googledrive::drive_mv(file = day_spreadsheet, 
-                          path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/"))
+    googledrive::drive_mv(file = day_spreadsheet, path = complete_data_folder)
+    cli::cli_alert_success("Uploaded complete data to {.val {folder_dribble$name}}")
   }
   
   return(day_complete_data)
@@ -261,15 +293,42 @@ create_day_complete_data <- function(expedition_name, folder_name, upload_indivi
 
 # Function to check for a complete data sheet for the day
 # 
-#  Input: Expedetion name, folder name.
-# Output: a tibble containing the sampling day metadata 
-#         with an additional `meta_to_site` column
+#  Input: Folder ID.
+# Output: TRUE if complete data spreadsheet was found, FALSE otherwise
 
-check_day_complete_data <- function(expedition_name, folder_name){
-  folders <- googledrive::drive_ls(
-    path = str_glue("~/Data Sheets/{this_expedition}/{todays_folder}/"))$name
+check_day_complete_data <- function(folder_id){
   
-  return(COMPLETE)
+  folder_dribble <- googledrive::drive_get(id = folder_id)
+  
+  complete_folder <- googledrive::drive_find(pattern = "COMPLETE DATA", type = "folder",
+                                     q = str_glue("'{folder_id}' in parents"))
+  if (nrow(complete_folder) == 0) {
+    return(FALSE)
+  } else {
+    complete_data <- googledrive::drive_find(pattern = str_glue("{folder_dribble$name}"),
+                                             type = "spreadsheet", n_max = 1,
+                                             q = str_glue("'{complete_folder$id}' in parents"))
+    return(nrow(complete_data) > 0)
+  }
+}
+
+# Function to join day metadata tibble with sampling data
+# Feature: Can upload complete tibble to a COMPLETE DATA
+#          folder within the day's folder.
+# 
+#  Input: Expedition name, folder name, optional: 
+#         logical value stating whether to upload
+#         or not
+# Output: A tibble containing all of the sampling day data,
+#         alternatively - uploaded into a created folder within
+#         folder name.
+
+create_specific_day_complete_data <- function(this_expedition, todays_folder, upload_individual_days = FALSE){
+  
+  folder_id <- get_day_folder_dribble(this_expedition, todays_folder)$id
+  
+  create_day_complete_data(folder_id, upload_individual_days)
+  
 }
 
 # Function to create individual days data, join them, 
@@ -277,33 +336,47 @@ check_day_complete_data <- function(expedition_name, folder_name){
 # a local backup using `store_local_backup`.
 #
 #  Input: Expedition name,
-#         optional: whether to upload individual day data
+#         optional: whether to upload individual day data,
+#                   whether to skip already completed days
 # Output: A tibble containing all of the expedition data,
 #         uploaded into a created folder within
 #         expedition directory
 
-create_expedition_data <- function(expedition_name, upload_individual_days = TRUE){
+create_expedition_data <- function(expedition_name, upload_individual_days = TRUE, skip_complete = FALSE){
   
-  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
+  expedition_folder_dribble <- googledrive::drive_find(pattern = expedition_name,
+                                                  type = "folder", n_max = 1,
+                                                  q = str_glue("'{data_sheets_id}' in parents"))
+  
+  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(expedition_folder_dribble)) %>% 
     filter(name != "EXPEDITION DATA") %>% 
-    .$name
+    .$id
   
-  days_data <- lapply(folders, function(folder_name){
-    message(glue::glue("Downloading data from {folder_name}"))
-    if (upload_individual_days) {
-      message(glue::glue("{folder_name} data uploaded"))
-    }
-    return(create_day_complete_data(expedition_name, folder_name, upload_individual_days))
+  if (skip_complete){
+    cli::cli_alert_info("Looking for days with complete data...")
+    skipped_folders <- sapply(folders, function(folder_id){
+      return(check_day_complete_data(folder_id))
+    })
+    skipped_folders_id <- folders[skipped_folders]
+    folders <- folders[!skipped_folders]
+    skipped_folders_names <-  sapply(skipped_folders_id, function(folder_id){
+      return(googledrive::drive_get(id = folder_id)$name)
+    })
+    cli::cli_alert_info("Skipping the following sampling day{?s}: {.val {skipped_folders_names}}")
+  }
+  
+  
+  days_data <- lapply(folders, function(folder_id){
+    return(create_day_complete_data(folder_id, upload_individual_days))
   })
   
   days_data <- days_data %>% bind_rows
   
-  googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
-                           path = str_glue("~/Data Sheets/{expedition_name}/"))
+  expedition_complete_data_folder <- googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
+                           path = expedition_folder_dribble)
   all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
                                         sheets = list(Data = days_data))
-  googledrive::drive_mv(file = all_data, 
-                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+  googledrive::drive_mv(file = all_data, path = expedition_complete_data_folder)
   
   store_local_backup(days_data, expedition_name)
   
