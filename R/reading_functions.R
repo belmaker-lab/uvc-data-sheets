@@ -120,7 +120,7 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
 
 read_worksheet <- function(day_meta, spreadsheet_id, sheet_identifier){
   worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c",
-                                         .name_repair = function(x) suppressMessages(make.unique(x)))
+                                         .name_repair = ~ vctrs::vec_as_names(..., repair = "unique", quiet = TRUE))
   Sys.sleep(2)
   sample_metadata <- read_metadata_columns(day_meta, worksheet, sheet_identifier)
   sample_data <- read_observer_worksheet(day_meta, worksheet, sheet_identifier)
@@ -257,6 +257,19 @@ create_day_complete_data <- function(expedition_name, folder_name, upload_indivi
   }
   
   return(day_complete_data)
+}
+
+# Function to check for a complete data sheet for the day
+# 
+#  Input: Expedetion name, folder name.
+# Output: a tibble containing the sampling day metadata 
+#         with an additional `meta_to_site` column
+
+check_day_complete_data <- function(expedition_name, folder_name){
+  folders <- googledrive::drive_ls(
+    path = str_glue("~/Data Sheets/{this_expedition}/{todays_folder}/"))$name
+  
+  return(COMPLETE)
 }
 
 # Function to create individual days data, join them, 
