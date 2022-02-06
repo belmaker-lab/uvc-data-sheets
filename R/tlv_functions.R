@@ -102,8 +102,7 @@ read_quadrates_counts <- function(worksheet, rows, cols, quadrate){
 read_invertebrate_worksheet <- function(spreadsheet_id, sheet_identifier){
   worksheet <- googlesheets4::read_sheet(spreadsheet_id, sheet_identifier, col_types = "c",
                                          .name_repair = ~ vctrs::vec_as_names(..., repair = "unique", quiet = TRUE))
-  message(glue::glue("Waiting for 10 seconds between worksheet"))
-  Sys.sleep(10)
+  Sys.sleep(2)
   meta_data <- read_invertebrate_metadata(worksheet)
   legend <- read_legend_columns(worksheet)
   
@@ -155,11 +154,10 @@ read_invertebrate_worksheet <- function(spreadsheet_id, sheet_identifier){
 
 # Function to read all worksheets in a deployment spreadsheet
 #
-#  Input: sampling day metadata tibble obtained by `download_meta_sheet`,
-#         spreadsheet ID object of the deployment.
+#  Input: Spreadsheet ID object of the deployment.
 # Output: A tibble containing all invertebrate sample data and metadata within the deployment
 
-read_invertebrate_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
+read_invertebrate_deployment_spreadsheet <- function(spreadsheet_id){
   samples <- googlesheets4::sheet_properties(googlesheets4::as_sheets_id(spreadsheet_id)) %>% 
     filter(!str_detect(string = name,"Fish|Species List|Readme.txt|Quadrate data")) %>% 
     .$name
@@ -183,20 +181,20 @@ read_invertebrate_deployment_spreadsheet <- function(day_metadata, spreadsheet_i
 #         supplied folder or alternatively, from
 #         selected spreadsheets.
 
-read_invertebrates_sampling_day_data <- function(day_metadata, expedition_name, folder_name, names = NULL){
+read_invertebrates_sampling_day_data <- function(folder_dribble, names = NULL){
   if (is.null(names)){
-    spreadsheets <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")) %>% 
+    spreadsheets <- googledrive::drive_ls(path = folder_dribble) %>% 
       filter(!name  %in% c("Metadata","Photos","COMPLETE DATA")) %>% 
       .$id
   }
   else{
-    spreadsheets <- googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/{folder_name}/")) %>% 
-      filter(name  %in% names) %>% 
+    spreadsheets <- googledrive::drive_ls(path = folder_dribble) %>% 
+      filter(name %in% names) %>% 
       .$id
   }
   
   sampling_day_data <- lapply(spreadsheets, function(spreadsheet_id){
-    read_invertebrate_deployment_spreadsheet(day_metadata, spreadsheet_id)
+    read_invertebrate_deployment_spreadsheet(spreadsheet_id)
   })
   
   sampling_day_data %>%
@@ -350,20 +348,22 @@ format_tlv_sheet <- function(complete_data){
 #         alternatively - uploaded into a created folder within
 #         folder name.
 
-download_tlv_day_complete_data <- function(expedition_name, folder_name, group, upload = FALSE){
+create_tlv_day_complete_data <- function(expedition_name, folder_name, group, upload_individual_days = TRUE){
   
-  day_metadata <- download_meta_sheet(expedition_name, folder_name)
+  folder_dribble <- get_day_folder_dribble(expedition_name, folder_name)
+  
+  day_metadata <- download_meta_sheet(folder_dribble)
   
   if (unique(day_metadata$Date) < lubridate::dmy("1/11/2021")) 
     stop(glue::glue("This function is designed for use with TLV sheets created November 2021 onwards!")) 
   
   if (group == "Fish") {
-    day_sample_data <- read_sampling_day_data(day_metadata, expedition_name, folder_name) %>% 
+    day_sample_data <- read_sampling_day_data(day_metadata, folder_dribble) %>% 
       mutate(Group = "Fish")
   }
   
   if (group == "Invertebrates") {
-    day_sample_data <- read_invertebrates_sampling_day_data(day_metadata, expedition_name, folder_name) %>% 
+    day_sample_data <- read_invertebrates_sampling_day_data(folder_dribble) %>% 
       mutate(Group = "Invertebrates")
   }
   
@@ -375,17 +375,20 @@ download_tlv_day_complete_data <- function(expedition_name, folder_name, group, 
   day_complete_data <- left_join(day_metadata, day_sample_data, by = c("meta_to_deployment_id")) %>% 
     format_tlv_sheet()
   
-  if (upload) {
-    search_results <- suppressMessages(googledrive::drive_get(
-      path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/")))
+  if (upload_individual_days) {
+    search_results <- googledrive::with_drive_quiet(
+      googledrive::drive_find(pattern = "COMPLETE DATA", type = "folder", n_max = 1,
+                              q = str_glue("'{folder_dribble$id}' in parents")))
+    complete_data_folder <-  search_results
     if (nrow(search_results) == 0) {
-      googledrive::drive_mkdir(name = "COMPLETE DATA", overwrite = TRUE,
-                               path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"))
+      complete_data_folder <- googledrive::drive_mkdir(name = "COMPLETE DATA", 
+                                                       overwrite = TRUE, path = folder_dribble)
     }
-    day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_name} - {group}"),
+    
+    day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_dribble$name} - {group}"),
                                                  sheets = list(Data = day_complete_data))
-    googledrive::drive_mv(file = day_spreadsheet,
-                          path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/"))
+    
+    googledrive::drive_mv(file = day_spreadsheet, path = complete_data_folder)
   }
   
   return(day_complete_data)
