@@ -37,7 +37,7 @@ get_skeleton_id <- function(skeleton_name){
 # A helper function for `create_spreadsheet` function
 #
 #  Input: A string specifying the project, 
-#         expedition name and folder name which for destination of the skeleton,
+#         folder dribble indicating the path to the skeleton,
 #         Name of new spreadsheet after copying
 # Output: A copied skeleton spreadsheet with new name in the selected destination
 
