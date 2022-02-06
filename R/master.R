@@ -19,8 +19,11 @@ build_framework <- function(file){
   #   and sampling day based on the input file.
   
   expedition_name <- unique(meta_table$Expedition)
-  folder_name <- paste(
-    unique(meta_table$Location),unique(meta_table$Date))
+  if (length(expedition_name) > 1) 
+    cli::cli_abort("Multiple expedition names supplied: {.val {expedition_name}}.")
+  folder_name <- paste(unique(meta_table$Location), unique(meta_table$Date))
+  if (length(folder_name) > 1) 
+    cli::cli_abort("Multiple dates and or locations supplied.")
   
   ########  Step 3: Testing for expedition directory #############
   #
@@ -28,19 +31,22 @@ build_framework <- function(file){
   #   directory for the current expedition. If it
   #   doesn't find one, it creates one.
   
-  message(glue::glue("Searching for expedition directory named {expedition_name}...\n\n"))
+  cli::cli_alert_info("Searching for expedition directory named {.val {expedition_name}}...\n\n")
   
-  search_results <- googledrive::with_drive_quiet(googledrive::drive_get(
-    path = str_glue("~/Data Sheets/{expedition_name}/")))
+  search_results <- googledrive::with_drive_quiet(
+    googledrive::drive_find(pattern = expedition_name,
+                            q = str_glue("'{data_sheets_id}' in parents")))
   if (nrow(search_results) == 1) {
-    message(glue::glue("Found expedition directory named {expedition_name}.\n\n"))
+    cli::cli_alert_success("Found expedition directory named {.val {expedition_name}}.")
+    expedition_dribble <- search_results
+    rm(search_results)
   } else if (nrow(search_results) == 0){
-    message(glue::glue("Expedition directory named {expedition_name} does not exist."))
-    message(glue::glue("Creating expedition directory now.\n\n"))
-    create_expedition_directory(expedition_name)
-  } else stop(glue::glue("Something is not right. Could be one of the following:
-                         1. Duplicate Expedition directory name in Data Sheets.
-                         2. Error with drive_get."))
+    cli::cli_alert_warning("Expedition directory named {.val {expedition_name}} does not exist.")
+    cli::cli_alert_info("Creating expedition directory now.")
+    expedition_dribble <- create_expedition_directory(expedition_name)
+  } else {
+    cli::cli_abort("\n Something is not right. Could be duplicate Expedition directory name in Data Sheets.")
+  }
   
   ########  Step 4: Creating folders in Drive ###################
   # 
@@ -51,10 +57,9 @@ build_framework <- function(file){
   #   Note:
   #     Folder name should be a "Location YYYY-MM-DD" format
   
-  message(glue::glue("Creating folder named {folder_name}\n\n"))
+  cli::cli_alert_info("Creating folder named {folder_name}\n\n")
   
-  create_main_directory(expedition_name,folder_name)
-  
+  folder_dribble <- create_main_directory(expedition_dribble, folder_name)
   
   #########  Step 5: Uploading the metadata table ############
   #
@@ -62,9 +67,7 @@ build_framework <- function(file){
   #   into the Metadata folder under today's folder in 
   #   the expedition directory.
   
-  message(glue::glue("Uploading metadata to {folder_name} - Metadata\n\n"))
-  
-  suppressMessages(upload_meta_sheet(meta_table, expedition_name, folder_name))
+  upload_meta_sheet(meta_table, folder_dribble)
   
   
   ########  Step 6: Obtaining surveyors data  ########################
@@ -86,9 +89,9 @@ build_framework <- function(file){
   #   Spreadsheets are located in:
   #   "~/Data Sheets/{this_expedition}/{todays_folder}/
   
-  message(glue::glue("Creating spreadsheets...\n\n"))
+  cli::cli_text("Creating spreadsheets...\n\n")
   
-  create_spreadsheets(surveyors_data, expedition_name,folder_name)
+  create_spreadsheets(surveyors_data, folder_dribble)
   
   ########  Step 8: Creating photo folders  #####################
   #
@@ -98,7 +101,7 @@ build_framework <- function(file){
   #   "Photos" folder is located in:
   #   "~/Data Sheets/{this_expedition}/{todays_folder}/
   
-  if (photos_needed(project = project)){
-    create_photo_folders_for_framework(surveyors_data, expedition_name, folder_name)}
+  # if (photos_needed(project = project)){
+  #   create_photo_folders_for_framework(surveyors_data, expedition_name, folder_name)}
   
 }

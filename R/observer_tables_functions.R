@@ -17,6 +17,22 @@ list_projects <- function() {
 
 list_projects()
 
+# Function to find id of a specific Skeleton spreadsheet.
+# A helper function for `copy_skeleton` function
+#
+#  Input: A name of a project
+# Output: ID of the corresponding skeleton spreadsheet
+
+get_skeleton_id <- function(skeleton_name){
+  skeleton_folder_id <- googledrive::drive_find(pattern = "Skeleton Folder",
+                                             type = "folder", n_max = 1,
+                                             q = str_glue("'{data_sheets_id}' in parents"))$id
+  skeleton_spreadsheet <- googledrive::drive_find(pattern = skeleton_name, type = "spreadsheet",
+                          q = str_glue("'{skeleton_folder_id}' in parents"), n_max = 1)
+  return(skeleton_spreadsheet$id)
+}
+
+
 # Function to copy the the respective skeleton which will be used to build observer spreadsheets
 # A helper function for `create_spreadsheet` function
 #
@@ -25,17 +41,17 @@ list_projects()
 #         Name of new spreadsheet after copying
 # Output: A copied skeleton spreadsheet with new name in the selected destination
 
-copy_skeleton <- function(project, expedition_name, folder_name, spreadsheet_name) {
+copy_skeleton <- function(project, folder_dribble, spreadsheet_name) {
   skeleton <- case_when(
-    project %in% projects$`Tel Aviv Transects`      ~ "~/Data Sheets/Skeleton Folder/Tel Aviv Skeleton 2.0",
-    project %in% projects$`Eilat Transects`         ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Transects",
-    project %in% projects$`Eilat Knolls`            ~ "~/Data Sheets/Skeleton Folder/Eilat Skeleton - Knolls",
-    project %in% projects$`Mediterranean Transects` ~ "~/Data Sheets/Skeleton Folder/Bioblitz Skeleton"
+    project %in% projects$`Tel Aviv Transects`      ~ get_skeleton_id("Tel Aviv Skeleton 2.0"),
+    project %in% projects$`Eilat Transects`         ~ get_skeleton_id("Eilat Skeleton - Transects"),
+    project %in% projects$`Eilat Knolls`            ~ get_skeleton_id("Eilat Skeleton - Knolls"),
+    project %in% projects$`Mediterranean Transects` ~ get_skeleton_id("Bioblitz Skeleton")
   )
   
   googledrive::local_drive_quiet()
   googledrive::drive_cp(file = skeleton,
-                        path = str_glue("~/Data Sheets/{expedition_name}/{folder_name}/"),
+                        path = folder_dribble,
                         name = spreadsheet_name)
 }
 
