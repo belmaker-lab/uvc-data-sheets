@@ -85,7 +85,7 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Bioblitz Fall 2021"
+this_expedition <- "Eilat June 2020"
 todays_folder   <- ""
 
 #######  Step 4: Download the data #############
