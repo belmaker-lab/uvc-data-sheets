@@ -18,7 +18,7 @@ get_day_folder_dribble <- function(expedition_name, folder_name){
 
 # Function to obtain the metadata sheet from the metadata folder.
 # 
-#  Input: Expedetion name, folder name.
+#  Input: folder dribble (from `get_day_folder_dribble` function)
 # Output: a tibble containing the sampling day metadata 
 #         with an additional `meta_to_site` column
 
@@ -104,7 +104,7 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`){
     observer_worksheet %>% 
-      filter(across(any_of(c("Species","Amount","Length","Distance")),
+      filter(if_all(any_of(c("Species","Amount","Length","Distance")),
                     .fns = function(x) !is.na(x))) %>% 
       return()
   }
@@ -128,7 +128,7 @@ read_observer_worksheet <- function(day_metadata, worksheet,sheet_identifier){
       rename_all( ~ columns)
     
     bind_rows(first_observer_tbl,second_observer_tbl) %>% 
-      filter(across(any_of(c("Observer","Species","Amount","Length")),
+      filter(if_all(any_of(c("Observer","Species","Amount","Length")),
                     .fns = function(x) !is.na(x))) %>% 
       return()
   }
@@ -176,9 +176,8 @@ read_deployment_spreadsheet <- function(day_metadata, spreadsheet_id){
 # Feature: Added ability to supply a vector of
 #          spreadsheets names to be read.
 #
-#  Input: Expedition name, folder name, 
-#         day metadata tibble, optional: a vector of 
-#         spreadsheet names.
+#  Input: day metadata tibble, a folder dribble,
+#         optional: a vector of spreadsheet names.
 # Output: A tibble containing all data from the 
 #         supplied folder or alternatively, from
 #         selected spreadsheets.

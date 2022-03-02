@@ -61,11 +61,11 @@ reshape_input_sheet <- function(input_sheet){
     pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
     mutate(across(.fns = function(x) type.convert(x, as.is = T))) %>% 
     mutate(across(where(is.logical), as.character)) %>% 
-    mutate(across(contains(c("Country","Expedition", "Location")), as.character)) %>% 
+    mutate(across(contains(c("Project","Country","Expedition", "Location")), as.character)) %>% 
     mutate(across(contains("Date"), lubridate::ymd))
   
   surveyors <- input_sheet[,3:length(input_sheet)] %>% 
-    filter(across(any_of(c("Site","SiteID","Knoll","Spot")),
+    filter(if_any(any_of(c("Site","SiteID","Knoll","Spot")),
                   .fns = function(x) !is.na(x)))
   
   bind_cols(metadata, surveyors) %>% 
@@ -139,18 +139,19 @@ build_framework_from_googlesheet <- function(){
   
   project_name <- select_project()
   
-  cli::cli_ol(c("Press any key to open sheet in browser", 
+  cli::cli_ol(c("Press Enter to open sheet in browser", 
                 "Fill the sheet",
                 "Once done, close the tab and continue here."))
   
   readline()
   input_sheet_url <- open_sheet_in_browser(project_name)
   
-  cli::cli_text("Welcome back, press any key to continue")
+  cli::cli_text("Welcome back, press Enter to continue")
   readline()
   
   input_sheet <- read_input_sheet(input_sheet_url)
-  input_sheet <- reshape_input_sheet(input_sheet)
+  input_sheet <- reshape_input_sheet(input_sheet) 
+  input_sheet <- reformat_meta_tibble_columns(input_sheet)
   
   cli::cli_h2("Please make sure these are correct before proceeding:")
   print(input_sheet)
@@ -170,7 +171,7 @@ build_framework_from_googlesheet <- function(){
     }
   }
   
-  meta_table <- read_metadata_from_googlesheets(input_sheet, project_name)
+  meta_table <- input_sheet
   
   store_local_input(meta_table)
   
