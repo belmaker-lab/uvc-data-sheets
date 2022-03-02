@@ -52,11 +52,11 @@ create_expedition_directory <- function(expedition_name){
 # Function to create a folder in Google Sheets named folder name
 # This should be executed for each day or for each location
 #
-#  Input: Expedition name (used in `create_expedition_directory` function),
+#  Input: Expedition dribble (from `create_expedition_directory` function),
 #         "location date" string indicating location and
 #         date of the dive (eg. "Katza 2020-02-11")
-# Output: Folder created in Google Drive, under expedition folder,
-#         with a child folder named "Metadata"
+# Output: Folder dribble created in Google Drive, under expedition folder.
+
 
 create_main_directory <- function(expedition_dribble, folder_name) {
   return(googledrive::drive_mkdir(name = folder_name, 
@@ -96,8 +96,8 @@ read_metadata <- function(input_sheet){
 # Function to upload the metadata sheet to the Metadata folder
 #
 #  Input: Metadata table obtained by `read_metadata`,
-#         Expedition name (used in `create_expedition_directory` function),
-#         Location name (used in `create_main_directory` function) 
+#         Expedition dribble (from `create_expedition_directory` function),
+#         folder dribble (from `create_main_directory` function) 
 # Output: Metadata table uploaded to Metadata folder 
 
 upload_meta_sheet <- function(meta_table, folder_dribble){
@@ -224,7 +224,7 @@ notify_email_sending <- function(spreadsheet_name) {
 # Functions to create observers tables, place them in folder name, 
 # create individual sheets for each transect, and give writing permissions to surveyors
 #  Input: row of the surveyor data obtained by `get_surveyors_data`,
-#         expedition name, and folder name
+#         folder dribble, project name
 # Output: Spreadsheets ready for surveyors data :)
 #   Note: This function operates on a single row in a tibble
 
@@ -251,7 +251,7 @@ create_spreadsheets_row <- function(surveyors_data, folder_dribble, project) {
 # Functions to apply `create_spreadsheets_row` on all rows of `surveyor_data`
 # create individual sheets for each transect, and give writing permissions to surveyors
 #  Input: surveyor data obtained by `get_surveyors_data`,
-#         expedition name, and folder name
+#         folder dribble (from `create_main_directory` function).
 # Output: Spreadsheets ready for surveyors data :)
 #   Note: This function operates on a single row in a tibble
 

@@ -16,7 +16,7 @@ photos_needed <- function(project){
 # Function to create photo folders for each surveyor couple.
 #
 #  Input: row of the surveyor data obtained by `get_surveyors_data`,
-#         expedition name, and folder name
+#         photo_folder_dribble.
 # Output: A number of folders named according to couple deployments,
 #         with subfolders named A-D, created under the "Photos" folder. 
 
@@ -39,7 +39,7 @@ create_photo_folders_row <- function(surveyors_data, photo_folder_dribble){
 # Function to create photo folders for all surveyor couples.
 #
 #  Input: Surveyor data obtained by `get_surveyors_data`,
-#         expedition name, and folder name
+#         photo_folder_dribble.
 # Output: A number of folders named according to couple deployments,
 #         with subfolders named A-D, created under the "Photos" folder. 
   
@@ -84,7 +84,7 @@ create_photo_folders <- function(file){
 # This function runs automatically with `build_framework` if `photos_needed` is TRUE.
 #
 #  Input: Surveyor data obtained by `get_surveyors_data`,
-#         expedition name, and folder name
+#         folder dribble
 # Output: A "Photos" folder under the sampling day folder, with
 #         A number of folders named according to couple deployments,
 #         with subfolders named A-D. 

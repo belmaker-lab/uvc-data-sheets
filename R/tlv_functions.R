@@ -174,9 +174,7 @@ read_invertebrate_deployment_spreadsheet <- function(spreadsheet_id){
 # Feature: Added ability to supply a vector of
 #          spreadsheets names to be read.
 #
-#  Input: Expedition name, folder name, 
-#         day metadata tibble, optional: a vector of 
-#         spreadsheet names.
+#  Input: folder dribble (from `get_day_folder_dribble` function)
 # Output: A tibble containing all data from the 
 #         supplied folder or alternatively, from
 #         selected spreadsheets.
