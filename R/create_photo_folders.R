@@ -5,10 +5,11 @@
 
 photos_needed <- function(project){
   out <- case_when(
-    project %in% projects$`Tel Aviv Transects`      ~ FALSE,
-    project %in% projects$`Eilat Transects`         ~ TRUE,
-    project %in% projects$`Eilat Knolls`            ~ FALSE,
-    project %in% projects$`Mediterranean Transects` ~ TRUE
+    project %in% projects$`Tel Aviv Transects`        ~ FALSE,
+    project %in% projects$`Eilat Transects`           ~ TRUE,
+    project %in% projects$`Eilat Knolls`              ~ FALSE,
+    project %in% projects$`Mediterranean Transects`   ~ TRUE,
+    project %in% projects$`Eilat Juveniles Transects` ~ TRUE,
   )
   return(out)
 }

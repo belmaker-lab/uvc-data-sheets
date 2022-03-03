@@ -16,7 +16,7 @@ library(tidyverse)
 
 get_data_sheets_id <- function(){
   data_sheets_id <<- googledrive::drive_find(pattern = "Data Sheets", type = "folder",
-                                            q = "'root' in parents", n_max = 1)$id
+                                             q = "'root' in parents", n_max = 1)$id
 }
 
 get_data_sheets_id()
@@ -46,7 +46,7 @@ get_surveyors_emails()
 
 create_expedition_directory <- function(expedition_name){
   return(googledrive::drive_mkdir(name = expedition_name,
-                           path = data_sheets_id))
+                                  path = data_sheets_id))
 }
 
 # Function to create a folder in Google Sheets named folder name
@@ -113,14 +113,13 @@ upload_meta_sheet <- function(meta_table, folder_dribble){
 # Function to get surveyors names, emails, and number of dives in current day:
 # This is then used for creating the data sheets.
 # 
-#  Input: Metadata table obtained by `read_metadata`,
-#         "Invisible" input, `email_lookup_table` obtained by `get_surveyors_emails`
+#  Input: Metadata table obtained by `read_metadata`,  
+#         `email_table` obtained by `get_surveyors_emails`
 # Output: A tibble containing First and Second observer names and emails, 
 #         names for the spreadsheet that will be created in the drive, 
 #         deployment ids of each pair, and the project this sampling is a part of.
 
-get_surveyors_data <- function(input_data, 
-                               email_table = email_lookup_table) {
+get_surveyors_data <- function(input_data, email_table = email_lookup_table) {
   
   if ("Location" %in% colnames(input_data)){
     if (length(unique(input_data$Location)) > 1 ){
@@ -129,11 +128,15 @@ get_surveyors_data <- function(input_data,
     }
   }
   
+  if (unique(input_data$Project %in% projects$`Eilat Juveniles Transects`)){
+    return(get_juveniles_surveyors_data(input_data, email_table = email_lookup_table))
+  }
+  
   # first part wrangles `email_lookup_table` to join with the input data
   first_observer_name <- email_table %>%
-    rename(`First Observer` = FullName) %>% select(`First Observer`,email)
+    rename(`First Observer` = FullName) %>% select(`First Observer`, email)
   second_observer_name <- email_table %>% 
-    rename(`Second Observer` = FullName) %>% select(`Second Observer`,email)
+    rename(`Second Observer` = FullName) %>% select(`Second Observer`, email)
   
   surveyors <- input_data %>%
     group_by(Project, `First Observer`, `Second Observer`) %>%
@@ -146,6 +149,50 @@ get_surveyors_data <- function(input_data,
     select(`First Observer`, `Second Observer`, spreadsheet_name, deployments, emails,Project)
   return(surveyors)
 }
+
+# Function to get surveyors names, emails, and number of dives in current day:
+# This is then used for creating the data sheets. This function only applies to
+# Juveniles surveys as there may be 4 different surveyors
+# 
+#  Input: Metadata table obtained by `read_metadata`,  
+#         `email_table` obtained by `get_surveyors_emails`
+# Output: A tibble containing First and Second observer names and emails, 
+#         names for the spreadsheet that will be created in the drive, 
+#         deployment ids of each pair, and the project this sampling is a part of.
+
+get_juveniles_surveyors_data <- function(input_data, email_table = email_lookup_table) {
+  
+  # first part wrangles `email_lookup_table` to join with the input data
+  first_observer_name <- email_table %>%
+    rename(`First Observer` = FullName) %>% select(`First Observer`, email)
+  second_observer_name <- email_table %>% 
+    rename(`Second Observer` = FullName) %>% select(`Second Observer`, email)
+  juveniles_first_observer_name <- email_table %>%
+    rename(`Juveniles First Observer` = FullName) %>% select(`Juveniles First Observer`, email)
+  juveniles_second_observer_name <- email_table %>% 
+    rename(`Juveniles Second Observer` = FullName) %>% select(`Juveniles Second Observer`, email)
+  
+  surveyors <- input_data %>%
+    group_by(Project, `First Observer`, `Second Observer`, 
+             `Juveniles First Observer`, `Juveniles Second Observer`) %>%
+    summarize(.groups = "keep", across(.cols = any_of(c("KnollID","SiteID","Spot")),
+                                       .fns = list, .names = "deployments")) %>% 
+    mutate(spreadsheet_name =  str_glue("{`First Observer`}, {`Second Observer`}, {`Juveniles First Observer`}, and {`Juveniles Second Observer`}")) %>% 
+    left_join(first_observer_name, by = "First Observer") %>%     # get email of first observer
+    rename(email_1 = email) %>% 
+    left_join(second_observer_name, by = "Second Observer") %>%   # get email of second observer
+    rename(email_2 = email) %>% 
+    left_join(juveniles_first_observer_name, by = "Juveniles First Observer") %>%     # get email of juvies first observer
+    rename(email_3 = email) %>% 
+    left_join(juveniles_second_observer_name, by = "Juveniles Second Observer") %>%   # get email of juvies second observer
+    rename(email_4 = email) %>% 
+    mutate(emails = pmap(.l = list(`email_1`,`email_2`,
+                                   `email_3`, email_4), .f = function(x,y,z,a) c(x,y,z,a))) %>% 
+    select(`First Observer`, `Second Observer`, `Juveniles First Observer`,
+           `Juveniles Second Observer`, spreadsheet_name, deployments, emails, Project)
+  return(surveyors)
+}
+
 
 # Function to generate reading permission of a spreadsheet
 # This is a helper function for the following function `grant_metadata_reading_permission`
@@ -232,16 +279,22 @@ notify_email_sending <- function(spreadsheet_name) {
 create_spreadsheets_row <- function(surveyors_data, folder_dribble, project) {
   notify_spreadsheet_creation(surveyors_data$spreadsheet_name)
   spreadsheet <- suppressMessages(copy_skeleton(project = project,
-                               folder_dribble = folder_dribble,
-                               spreadsheet_name = surveyors_data$spreadsheet_name))
-
+                                                folder_dribble = folder_dribble,
+                                                spreadsheet_name = surveyors_data$spreadsheet_name))
+  
   lapply(unlist(surveyors_data$deployments), function(dep) {
-    suppressMessages(create_observer_working_sheets(project = project, deployment = dep, spreadsheet = spreadsheet,
-                                   observer1 = surveyors_data$`First Observer`,
-                                   observer2 = surveyors_data$`Second Observer`))
+    suppressMessages(
+      create_observer_working_sheets(project = project, deployment = dep, spreadsheet = spreadsheet,
+                                     observer1 = surveyors_data$`First Observer`,
+                                     observer2 = surveyors_data$`Second Observer`,
+                                     j_observer1 = ifelse("Juveniles First Observer" %in% colnames(surveyors_data),
+                                                          surveyors_data$`Juveniles First Observer`, NA),
+                                     j_observer2 = ifelse("Juveniles Second Observer" %in% colnames(surveyors_data),
+                                                          surveyors_data$`Juveniles Second Observer`, NA))
+    )
   }
   )
-
+  
   suppressMessages(delete_skeleton_sheets(project = project, spreadsheet = spreadsheet))
   notify_email_sending(surveyors_data$spreadsheet_name)
   grant_writing_permission(spreadsheet_id = spreadsheet, vector_of_emails = unlist(surveyors_data$emails))

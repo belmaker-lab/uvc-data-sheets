@@ -4,7 +4,8 @@
 # Output: The project name as a character object
 
 select_project <- function(){
-  projects <- c("Bioblitz","ASSEMBLE", "Eilat Knolls", "Eilat Transects", "Tel Aviv Project")
+  projects <- c("Bioblitz","ASSEMBLE", "Eilat Knolls", 
+                "Eilat Transects", "Tel Aviv Project", "Eilat Juveniles")
   cli::cli_h1("Select Sampling Type:")
   cli::cli_ol(projects)
   choice <- readline("Selection: ")
