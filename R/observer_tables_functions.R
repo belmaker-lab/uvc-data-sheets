@@ -13,7 +13,8 @@ list_projects <- function() {
                     "Eilat Transects" = c("FunDiversity"),
                     "Eilat Knolls" = c("EcoCamp"),
                     "Tel Aviv Transects" = c("TLV"),
-                    "Eilat Juveniles Transects" = c("Juveniles"))
+                    "Eilat Juveniles Transects" = c("Juveniles"),
+                    "Eilat Juveniles Knolls" = c("Juveniles Knolls"))
 }
 
 list_projects()
@@ -48,7 +49,8 @@ copy_skeleton <- function(project, folder_dribble, spreadsheet_name) {
     project %in% projects$`Eilat Transects`           ~ get_skeleton_id("Eilat Skeleton - Transects"),
     project %in% projects$`Eilat Knolls`              ~ get_skeleton_id("Eilat Skeleton - Knolls"),
     project %in% projects$`Mediterranean Transects`   ~ get_skeleton_id("Bioblitz Skeleton"),
-    project %in% projects$`Eilat Juveniles Transects` ~ get_skeleton_id("Eilat Juvies Skeleton")
+    project %in% projects$`Eilat Juveniles Transects` ~ get_skeleton_id("Eilat Juvies Skeleton"),
+    project %in% projects$`Eilat Juveniles Knolls`    ~ get_skeleton_id("Eilat Juvies Skeleton - Knolls")
   )
   
   googledrive::local_drive_quiet()
@@ -164,6 +166,28 @@ create_observer_working_sheets <- function(project, deployment, spreadsheet, obs
                                  reformat = F)
     }
   }
+  if (project %in% projects$`Eilat Juveniles Knolls`) {
+    googlesheets4::sheet_copy(from_ss = spreadsheet,
+                              from_sheet = "Observer Table - MASTER",
+                              to_ss = spreadsheet,
+                              to_sheet = str_glue("Knoll {deployment}"))
+    googlesheets4::range_write(ss = spreadsheet,
+                               sheet = str_glue("Knoll {deployment}"),
+                               col_names = F, 
+                               range = "B2:B6",
+                               data = as.data.frame(c(observer1, observer2, j_observer1, j_observer2, deployment)),
+                               reformat = F)
+    googlesheets4::sheet_copy(from_ss = spreadsheet,
+                              from_sheet = "Juveniles Observer Table - MASTER",
+                              to_ss = spreadsheet,
+                              to_sheet = str_glue("Juveniles - Knoll {deployment}"))
+    googlesheets4::range_write(ss = spreadsheet,
+                               sheet = str_glue("Juveniles - Knoll {deployment}"),
+                               col_names = F, 
+                               range = "B2:B6",
+                               data = as.data.frame(c(observer1, observer2, j_observer1, j_observer2, deployment)),
+                               reformat = F)
+  }
 }
 
 
@@ -191,6 +215,10 @@ delete_skeleton_sheets <- function(project, spreadsheet){
   if (project %in% projects$`Eilat Juveniles Transects`) {
     googlesheets4::sheet_delete(ss = spreadsheet,sheet = "Observer Table - Transients - MASTER")
     googlesheets4::sheet_delete(ss = spreadsheet,sheet = "Observer Table - Cryptic - MASTER")
+    googlesheets4::sheet_delete(ss = spreadsheet,sheet = "Juveniles Observer Table - MASTER")
+  }
+  if (project %in% projects$`Eilat Juveniles Knolls`) {
+    googlesheets4::sheet_delete(ss = spreadsheet,sheet = "Observer Table - MASTER")
     googlesheets4::sheet_delete(ss = spreadsheet,sheet = "Juveniles Observer Table - MASTER")
   }
 }

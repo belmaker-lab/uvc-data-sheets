@@ -10,6 +10,7 @@ photos_needed <- function(project){
     project %in% projects$`Eilat Knolls`              ~ FALSE,
     project %in% projects$`Mediterranean Transects`   ~ TRUE,
     project %in% projects$`Eilat Juveniles Transects` ~ TRUE,
+    project %in% projects$`Eilat Juveniles Knolls`    ~ FALSE,
   )
   return(out)
 }
