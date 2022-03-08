@@ -288,9 +288,9 @@ create_spreadsheets_row <- function(surveyors_data, folder_dribble, project) {
       create_observer_working_sheets(project = project, deployment = dep, spreadsheet = spreadsheet,
                                      observer1 = surveyors_data$`First Observer`,
                                      observer2 = surveyors_data$`Second Observer`,
-                                     j_observer1 = ifelse("Juveniles First Observer" %in% colnames(surveyors_data),
+                                     j_observer1 = ifelse("Juveniles First Observer" %in% names(surveyors_data),
                                                           surveyors_data$`Juveniles First Observer`, NA),
-                                     j_observer2 = ifelse("Juveniles Second Observer" %in% colnames(surveyors_data),
+                                     j_observer2 = ifelse("Juveniles Second Observer" %in% names(surveyors_data),
                                                           surveyors_data$`Juveniles Second Observer`, NA))
     )
   }
