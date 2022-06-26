@@ -129,7 +129,9 @@ get_surveyors_data <- function(input_data, email_table = email_lookup_table) {
   }
   
   if (unique(input_data$Project) %in% 
-      c(projects$`Eilat Juveniles Knolls`, projects$`Eilat Juveniles Transects`)){
+      c(projects$`Eilat Juveniles Knolls`, 
+        projects$`Eilat Juveniles Transects`,
+        projects$`Eilat Juveniles Artificial`)){
     return(get_juveniles_surveyors_data(input_data, email_table = email_lookup_table))
   }
   
