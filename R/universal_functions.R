@@ -174,7 +174,7 @@ get_juveniles_surveyors_data <- function(input_data, email_table = email_lookup_
     rename(`Juveniles Second Observer` = FullName) %>% select(`Juveniles Second Observer`, email)
   
   surveyors <- input_data %>%
-    group_by(Project, `First Observer`, `Second Observer`, 
+    group_by(Project, `First Observer`, `Second Observer`, Location,
              `Juveniles First Observer`, `Juveniles Second Observer`) %>%
     summarize(.groups = "keep", across(.cols = any_of(c("KnollID","SiteID","Spot")),
                                        .fns = list, .names = "deployments")) %>% 
@@ -189,7 +189,7 @@ get_juveniles_surveyors_data <- function(input_data, email_table = email_lookup_
     rename(email_4 = email) %>% 
     mutate(emails = pmap(.l = list(`email_1`,`email_2`,
                                    `email_3`, email_4), .f = function(x,y,z,a) c(x,y,z,a))) %>% 
-    select(`First Observer`, `Second Observer`, `Juveniles First Observer`,
+    select(`First Observer`, `Second Observer`, `Juveniles First Observer`, Location, 
            `Juveniles Second Observer`, spreadsheet_name, deployments, emails, Project)
   return(surveyors)
 }
@@ -285,7 +285,10 @@ create_spreadsheets_row <- function(surveyors_data, folder_dribble, project) {
   
   lapply(unlist(surveyors_data$deployments), function(dep) {
     suppressMessages(
-      create_observer_working_sheets(project = project, deployment = dep, spreadsheet = spreadsheet,
+      create_observer_working_sheets(project = project, 
+                                     deployment = dep, 
+                                     spreadsheet = spreadsheet,
+                                     location = surveyors_data$Location,
                                      observer1 = surveyors_data$`First Observer`,
                                      observer2 = surveyors_data$`Second Observer`,
                                      j_observer1 = ifelse("Juveniles First Observer" %in% names(surveyors_data),
