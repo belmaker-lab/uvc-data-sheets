@@ -5,7 +5,7 @@
 
 select_project <- function(){
   projects <- c("Bioblitz","ASSEMBLE", "Eilat Knolls", 
-                "Eilat Transects", "Tel Aviv Project", "Eilat Juveniles - Transects", "Eilat Juveniles - Knolls")
+                "Eilat Transects", "Tel Aviv Project", "Eilat Juveniles")
   cli::cli_h1("Select Sampling Type:")
   cli::cli_ol(projects)
   choice <- readline("Selection: ")
@@ -62,7 +62,7 @@ reshape_input_sheet <- function(input_sheet){
     pivot_wider(names_from = Metadata, names_sort = FALSE, values_from = Value) %>% 
     mutate(across(.fns = function(x) type.convert(x, as.is = T))) %>% 
     mutate(across(where(is.logical), as.character)) %>% 
-    mutate(across(contains(c("Project","Country","Expedition", "Location")), as.character)) %>% 
+    mutate(across(contains(c("Project","Country","Expedition", "Method", "Location")), as.character)) %>% 
     mutate(across(contains("Date"), lubridate::ymd))
   
   surveyors <- input_sheet[,3:length(input_sheet)] %>% 
