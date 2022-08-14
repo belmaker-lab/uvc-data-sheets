@@ -85,8 +85,8 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Eilat June 2020"
-todays_folder   <- ""
+this_expedition <- "Juvies June 2022"
+todays_folder   <- "Tamar 2022-06-29"
 
 #######  Step 4: Download the data #############
 # 
@@ -109,4 +109,4 @@ join_days_data(this_expedition)
 #   This step saves the expedition data as an object in R.
 #   Additionally, uploads into a folder named EXPEDITION DATA
 
-create_expedition_data(this_expedition, upload_individual_days = TRUE, skip_complete = FALSE)
+create_expedition_data(this_expedition, upload_individual_days = TRUE, skip_complete = TRUE)
