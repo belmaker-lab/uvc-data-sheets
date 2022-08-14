@@ -46,6 +46,12 @@ download_meta_sheet <- function(folder_dribble){
   if (unique(meta_table$Project) %in% projects$`Eilat Knolls`)
   {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {KnollID}"))}
+  if (unique(meta_table$Project) %in% projects$`Eilat Juveniles Knolls`)
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
+    "{`First Observer`} and {`Second Observer`} and {`Juveniles First Observer`} and {`Juveniles Second Observer`} - {KnollID}"))}
+  if (unique(meta_table$Project) %in% c(projects$`Eilat Juveniles Transects`, projects$`Eilat Juveniles Artificial`))
+  {meta_table <- mutate(meta_table, meta_to_deployment_id = str_glue(
+    "{`First Observer`} and {`Second Observer`} and {`Juveniles First Observer`} and {`Juveniles Second Observer`} - {SiteID}"))}
   
   return(meta_table)
 }
@@ -246,17 +252,24 @@ create_day_complete_data <- function(folder_id, upload_individual_days = FALSE){
   day_sample_data <- read_sampling_day_data(day_metadata, folder_dribble)
   
   if (unique(day_metadata$Project) %in% projects$`Tel Aviv Transects`)
-  {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
     "{`Fish Observer`} and {`Invertebrate Observer`} - {Site}"))}
   if (unique(day_metadata$Project) %in% projects$`Mediterranean Transects`)
-  {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Site}"))}
   if (unique(day_metadata$Project) %in% projects$`Eilat Transects`)
-  {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Site}"))}
   if (unique(day_metadata$Project) %in% projects$`Eilat Knolls`)
-  {day_sample_data <- mutate(day_sample_data,meta_to_deployment_id = str_glue(
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
     "{`First Observer`} and {`Second Observer`} - {Knoll}"))}
+  if (unique(day_metadata$Project) %in% projects$`Eilat Juveniles Knolls`)
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
+    "{`First Observer`} and {`Second Observer`} and {`Juveniles First Observer`} and {`Juveniles Second Observer`} - {Knoll}"))}
+  if (unique(day_metadata$Project) %in% c(projects$`Eilat Juveniles Transects`, projects$`Eilat Juveniles Artificial`))
+  {day_sample_data <- mutate(day_sample_data, meta_to_deployment_id = str_glue(
+    "{`First Observer`} and {`Second Observer`} and {`Juveniles First Observer`} and {`Juveniles Second Observer`} - {Site}"))}
+  
   
   unique_ids_meta <- bind_cols(meta_to_deployment_id = day_metadata$meta_to_deployment_id)
   unique_ids_samples <- bind_cols(meta_to_deployment_id = day_sample_data$meta_to_deployment_id)
