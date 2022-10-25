@@ -85,8 +85,8 @@ source("R/reading_functions.R")
 #   Select an expedition folder under Data Sheets in Google Drive
 #   and the folder of today's sampling.
 
-this_expedition <- "Juvies June 2022"
-todays_folder   <- "Tamar 2022-06-29"
+this_expedition <- "Juvies August 2022"
+todays_folder   <- "Neptune 2022-06-29"
 
 #######  Step 4: Download the data #############
 # 
