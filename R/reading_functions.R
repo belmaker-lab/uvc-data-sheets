@@ -406,24 +406,34 @@ create_expedition_data <- function(expedition_name, upload_individual_days = TRU
 #         expedition directory
 
 join_days_data <- function(expedition_name){
-  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(str_glue("~/Data Sheets/{expedition_name}/"))) %>% 
-    filter(name != "EXPEDITION DATA") %>% 
-    .$name
   
-  days_data <- lapply(folders, function(folder_name){
-    day_complete_data_id <- googledrive::drive_get(
-      str_glue("~/Data Sheets/{expedition_name}/{folder_name}/COMPLETE DATA/{folder_name}"))$id
+  expedition_folder_dribble <- googledrive::drive_find(pattern = expedition_name,
+                                                       type = "folder", n_max = 1,
+                                                       q = str_glue("'{data_sheets_id}' in parents"))
+  
+  folders <- googledrive::with_drive_quiet(googledrive::drive_ls(expedition_folder_dribble)) %>% 
+    filter(name != "EXPEDITION DATA") %>% 
+    .$id
+  
+  days_data <- lapply(folders, function(folder_id){
+    day_complete_data_folder_id <- googledrive::drive_ls(pattern = "COMPLETE DATA", 
+                                                         type = "folder", n_max = 1,
+                                                         q = str_glue("'{folder_id}' in parents"))
+    
+    day_complete_data_id <- googledrive::drive_ls(day_complete_data_folder_id)
+    
     return(googlesheets4::read_sheet(day_complete_data_id,sheet = "Data"))
   })
   
   days_data <- days_data %>% bind_rows
   
-  googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
+  expedition_complete_data_folder <- googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
                            path = str_glue("~/Data Sheets/{expedition_name}/"))
   all_data <- googlesheets4::gs4_create(name = str_glue("{expedition_name}"),
                                         sheets = list(Data = days_data))
   googledrive::drive_mv(file = all_data, 
-                        path = str_glue("~/Data Sheets/{expedition_name}/EXPEDITION DATA/"))
+                        path = expedition_complete_data_folder)
+  
   
   store_local_backup(days_data, expedition_name)
   
