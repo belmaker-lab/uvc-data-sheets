@@ -291,7 +291,7 @@ create_day_complete_data <- function(folder_id, upload_individual_days = FALSE){
                               q = str_glue("'{folder_id}' in parents")))
     complete_data_folder <-  search_results
     if (nrow(search_results) == 0) {
-      complete_data_folder <- googledrive::drive_mkdir(name = "COMPLETE DATA", 
+        complete_data_folder <- googledrive::drive_mkdir(name = "COMPLETE DATA", 
                                                        overwrite = TRUE, path = folder_dribble)
     }
     day_spreadsheet <- googlesheets4::gs4_create(name = str_glue("{folder_dribble$name}"),
@@ -364,6 +364,8 @@ create_expedition_data <- function(expedition_name, upload_individual_days = TRU
     filter(name != "EXPEDITION DATA") %>% 
     .$id
   
+  complete_data <- NULL
+  
   if (skip_complete){
     cli::cli_alert_info("Looking for days with complete data...")
     skipped_folders <- sapply(folders, function(folder_id){
@@ -375,6 +377,19 @@ create_expedition_data <- function(expedition_name, upload_individual_days = TRU
       return(googledrive::drive_get(id = folder_id)$name)
     })
     cli::cli_alert_info("Skipping the following sampling day{?s}: {.val {skipped_folders_names}}")
+    
+    complete_data <- lapply(skipped_folders_id, function(folder_id){
+      day_complete_data_folder_id <- googledrive::drive_ls(pattern = "COMPLETE DATA", 
+                                                           type = "folder", n_max = 1,
+                                                           q = str_glue("'{folder_id}' in parents"))
+      
+      day_complete_data_id <- googledrive::drive_ls(day_complete_data_folder_id)
+      
+      return(googlesheets4::read_sheet(day_complete_data_id,sheet = "Data"))
+    })
+    
+    complete_data <- complete_data %>% bind_rows
+    
   }
   
   
@@ -383,6 +398,8 @@ create_expedition_data <- function(expedition_name, upload_individual_days = TRU
   })
   
   days_data <- days_data %>% bind_rows
+  
+  days_data <- days_data %>% bind_rows(complete_data)
   
   expedition_complete_data_folder <- googledrive::drive_mkdir(name = "EXPEDITION DATA", overwrite = TRUE,
                            path = expedition_folder_dribble)
