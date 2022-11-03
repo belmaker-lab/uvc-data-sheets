@@ -64,7 +64,11 @@ download_meta_sheet <- function(folder_dribble){
 
 modify_eilat_transects_deployment_metadata <- function(deployment_metadata_tbl, sheet_identifier){
   deployment_metadata_tbl %>% 
-    mutate(Letter = if_else(str_detect(sheet_identifier,"TRANSIENTS"), "T", "C")) %>% 
+    # mutate(Letter = if_else(str_detect(sheet_identifier,"TRANSIENTS"), "T", "C")) %>% 
+    mutate(Letter = case_when(
+      str_detect(sheet_identifier, "TRANSIENTS") ~ "T",
+      str_detect(sheet_identifier, "CRYPTIC") ~ "C",
+      str_detect(sheet_identifier, "Juveniles") ~ "J")) %>% 
     return()
 }
 
@@ -90,7 +94,8 @@ read_metadata_columns <- function(day_metadata, worksheet, sheet_identifier){
   #   mutate(across(.cols = all_of(c("Time Start","Time End")),
   #                 .fns = hms::parse_hm))
   
-  if (unique(day_metadata$Project) %in% projects$`Eilat Transects`){
+  if (unique(day_metadata$Project) %in% c(projects$`Eilat Transects`, 
+                                          projects$`Eilat Juveniles Transects`)){
     return(modify_eilat_transects_deployment_metadata(deployment_metadata, sheet_identifier))
   }
   return(deployment_metadata)
