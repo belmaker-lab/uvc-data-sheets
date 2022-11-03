@@ -109,4 +109,4 @@ join_days_data(this_expedition)
 #   This step saves the expedition data as an object in R.
 #   Additionally, uploads into a folder named EXPEDITION DATA
 
-create_expedition_data(this_expedition, upload_individual_days = TRUE, skip_complete = TRUE)
+create_expedition_data(this_expedition, upload_individual_days = TRUE, skip_complete = FALSE)
